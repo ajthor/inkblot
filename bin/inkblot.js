@@ -21,6 +21,8 @@ var path = require('path');
 
 var glob = require('glob');
 
+var unit = require('./unit.js');
+
 // *Globals*
 var tabs = '\t';
 var spaces = '  ';
@@ -30,23 +32,13 @@ var commandObj = function() {
 	this.children = [];
 };
 
-// Test Functions
-// --------------
-// var describe = function(description, data, cb) {
-	 
-// }
-
-// var it = function(description, data, cb) {
-
-// }
-
 // Inkblot Object
 // ==============
 var inkblot = module.exports = function(options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
-		searchString: '//:',
+		searchString: '// t:',
 		indentUsing: 'spaces',
 
 		out: './test',
@@ -87,7 +79,7 @@ _.extend(inkblot.prototype, {
 				// inkblot comments.
 				var j;
 				for(j = matches.length; j--; ) {
-					process.stdout.write('[ in: ' + matches[j] + ' ]\n');
+					process.stdout.write('[ ' + matches[j] + ' ]\n');
 					this.parse(matches[j], cb, context);
 				}
 
@@ -118,6 +110,7 @@ _.extend(inkblot.prototype, {
 	compile: function(filenames) {
 		this.load(filenames, function(filename, data) {
 			var line, start, end;
+			var count = 0;
 
 			var tests = [];
 			var testObj;
@@ -125,10 +118,10 @@ _.extend(inkblot.prototype, {
 			var base, ext;
 			// The variable to hold the `.spec` file stream to be 
 			// written once compilation is done.
-			var spec = '';
+			var stream = '';
 			
 			// Find the comments in the file.
-			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
+			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; count++) {
 				end = data.indexOf('\n', start) + 1;
 				line = data.slice(start, end);
 				// Remove the line from the data stream so that you 
@@ -152,7 +145,7 @@ _.extend(inkblot.prototype, {
 			console.log(tests);
 			testObj = this._makeObj(tests);
 
-			console.log(testObj);
+			stream = unit.make(testObj, stream);
 
 			// Write the file to a new spec file.
 			ext = path.extname(filename);
@@ -160,51 +153,82 @@ _.extend(inkblot.prototype, {
 			
 			filename = path.join(this.options.out, base + '.spec' + ext);
 
-			process.stdout.write('[ out: ' + filename + ' ]\n');
-			fs.writeFile(filename, spec, function(err) {
+			fs.writeFile(filename, stream, function(err) {
 				if(err) {
 					throw err;
 				}
+				process.stdout.write(' ==> ' + filename + '\n');
 			});
 
 		}.bind(this));
 	},
 
-	_makeObj: function(tests) {
-		var i, j;
-		var result = {};
-		var children = [];
+	// Make Object Function
+	// --------------------
+	// Creates an object set up as a tree, with 'children' nodes to 
+	// facilitate nesting. After the object has been created, it will 
+	// be run through the stream writing function to actually 
+	// generate the stream to write to the spec file.
 
+	// TODO: refactor to improve DRY coding techniques. I feel I could remove about ten lines from this function.
+	_makeObj: function(tests) {
 		var id;
 
-		// Run through all tests.
-		for(i = 0; i < tests.length; i++) {
-			// Collect the ones that are at a 'higher' indentation level than the current command structure.
-			if(this._findLevel( tests[i] ) > 0) {
-				console.log("child:", tests[i]);
-				children.push(tests[i]);
-			}
-			// If you run into a command that is at the same level, create an object using children and start over.
-			else {
-				// Reduce indentation level by one.
+		var i, j;
 
+		var parent = tests[0];
+		var children = [];
+
+		var result = {};
+		for(i = 0; i < tests.length; i++) {
+
+			// Test if the current line is a 'parent'. If it is, then 
+			// push all children which have accumulated to the 
+			// previous parent and set up a new parent to add 
+			// children to.
+			if(this._findLevel(tests[i]) === 0) {
+				
 				if(children.length > 0) {
 					for(j = 0; j < children.length; j++) {
 						children[j] = children[j].slice(this.indentation.length);
 					}
-					// And run childrn through the same process.
-					this._makeObj(children);
+
+					parent.children = this._makeObj(children);
 				}
 
-				console.log("parent:", tests[i]);
+				// Make a new parent. Default key:value pairs are 
+				// `command` and `children`. 'Command' holds the full 
+				// string in the line, minus any indentation.
+				id = _.uniqueId();
+
+				parent = result[id] = {
+					command: tests[i],
+					children: null
+				};
 
 				children = [];
+
+			}
+			// This line has an indentation level higher than the 
+			// current indentation level; it is a 'child' element and 
+			// we should add it to the list of children to be added.
+			else {
+				children.push(tests[i]);
 			}
 
 		}
 
-		return result;
+		// Push any last children to the result object. This handles 
+		// any 'dangling' children that appear last in the list.
+		if(children.length > 0) {
+			for(j = 0; j < children.length; j++) {
+				children[j] = children[j].slice(this.indentation.length);
+			}
 
+			parent.children = this._makeObj(children);
+		}
+
+		return result;
 	},
 
 	_findLevel: function(line) {
