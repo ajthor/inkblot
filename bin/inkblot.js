@@ -44,7 +44,7 @@ var inkblot = module.exports = function(options) {
 		searchString: '//:',
 		indentUsing: 'spaces',
 
-		out: './test'
+		out: './test',
 		
 		templates: [
 			'describe', 
@@ -118,17 +118,18 @@ _.extend(inkblot.prototype, {
 			// Find the comments in the file.
 			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
 				end = data.indexOf('\n', start) + 1;
-
 				line = data.slice(start, end);
+				// Remove the line from the data stream so that you 
+				// don't cycle over the same comment twice.
+				data = data.replace(line, "");
+
+				// Get workable comment that we can perform 
+				// operations on and modify.
 				line = line.slice(this.options.searchString.length + 1);
 
 				if(line.length > 0) {
 					process.stdout.write(line);
 				}
-
-				// Remove the line from the data stream so that you 
-				// don't cycle over the same comment twice.
-				data = data.replace(line, "");
 
 				// Take lines of comments and determine the 
 				// indentation level of each comment. This will 
@@ -157,7 +158,7 @@ _.extend(inkblot.prototype, {
 			// 	}
 			// });
 
-		});
+		}.bind(this));
 	},
 
 	// Clean Comments

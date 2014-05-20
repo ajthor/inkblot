@@ -34,8 +34,8 @@ var usage = function() {
 // which doesn't begin with a hyphen '-' or a double dash '--' a 
 // potential glob file name to pass to the parse function. Returns an 
 // object with all options parsed and an array of file names.
-//t describe parseArgv
-//t   should return an object
+//: describe parseArgv
+//:   should return an object
 var parseArgv = function(argv) {
 	var i;
 	var obj = {
