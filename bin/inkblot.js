@@ -27,13 +27,13 @@ var spaces = '  ';
 
 // Test Functions
 // --------------
-var describe = function(description, data, cb) {
+// var describe = function(description, data, cb) {
 	 
-}
+// }
 
-var it = function(description, data, cb) {
+// var it = function(description, data, cb) {
 
-}
+// }
 
 // Inkblot Object
 // ==============
@@ -41,8 +41,11 @@ var inkblot = module.exports = function(options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
-		searchString: '//t',
+		searchString: '//:',
 		indentUsing: 'spaces',
+
+		out: './test'
+		
 		templates: [
 			'describe', 
 			'it', 
@@ -109,6 +112,8 @@ _.extend(inkblot.prototype, {
 		this.load(filenames, function(filename, data) {
 			var line, start, end;
 			var level, indentation, piece;
+
+			var base, ext;
 			
 			// Find the comments in the file.
 			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
@@ -132,7 +137,7 @@ _.extend(inkblot.prototype, {
 				// each comment.
 				indentation = (this.options.indentUsing === 'tabs') ? tabs : spaces;
 
-				for( level = 0; (piece = line.slice(0, 2)) == indentation; level++) {
+				for(level = 0; (piece = line.slice(0, 2)) == indentation; level++) {
 					line = line.slice(indentation.length);
 				}
 
@@ -140,6 +145,17 @@ _.extend(inkblot.prototype, {
 				// the rest of the command into keywords.
 
 			}
+
+			// Write the file to a new spec file.
+			ext = path.extname(filename);
+			base = path.basename(filename, ext);
+			filename = base + '.spec' + ext;
+			console.log(filename);
+			// fs.writeFile(filename, data, function(err) {
+			// 	if(err) {
+			// 		throw err;
+			// 	}
+			// });
 
 		});
 	},
