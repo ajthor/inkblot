@@ -21,6 +21,20 @@ var path = require('path');
 
 var glob = require('glob');
 
+// *Globals*
+var tabs = '\t';
+var spaces = '  ';
+
+// Test Functions
+// --------------
+var describe = function(description, data, cb) {
+	 
+}
+
+var it = function(description, data, cb) {
+
+}
+
 // Inkblot Object
 // ==============
 var inkblot = module.exports = function(options) {
@@ -28,6 +42,7 @@ var inkblot = module.exports = function(options) {
 		// Inkblot Defaults
 		// ----------------
 		searchString: '//t',
+		indentUsing: 'spaces',
 		templates: [
 			'describe', 
 			'it', 
@@ -54,16 +69,15 @@ _.extend(inkblot.prototype, {
 		var i;
 		for(i = filenames.length; i--; ) {
 
-			console.log(filenames);
-
 			glob( filenames[i], function(err, matches) {
-				if(err !== null) {
+				if(err) {
 					throw err;
 				}
 				// If any matches are found, parse them for 
 				// inkblot comments.
 				var j;
 				for(j = matches.length; j--; ) {
+					process.stdout.write('[ ' + matches[j] + ' ]\n');
 					this.parse(matches[j], cb, context);
 				}
 
@@ -93,15 +107,40 @@ _.extend(inkblot.prototype, {
 	// ----------------
 	compile: function(filenames) {
 		this.load(filenames, function(filename, data) {
-			var line, index;
+			var line, start, end;
+			var level, indentation, piece;
+			
+			// Find the comments in the file.
+			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
+				end = data.indexOf('\n', start) + 1;
 
-			for(line = ''; (index = data.indexOf(this.options.searchString)) !== -1; ) {
-				line = data.slice(index, data.indexOf('\n', index));
+				line = data.slice(start, end);
+				line = line.slice(this.options.searchString.length + 1);
 
 				if(line.length > 0) {
-					console.log(line);
+					process.stdout.write(line);
 				}
+
+				// Remove the line from the data stream so that you 
+				// don't cycle over the same comment twice.
+				data = data.replace(line, "");
+
+				// Take lines of comments and determine the 
+				// indentation level of each comment. This will 
+				// determine nesting. Once this is determined, it 
+				// will be possible to interpret the sub-commands of 
+				// each comment.
+				indentation = (this.options.indentUsing === 'tabs') ? tabs : spaces;
+
+				for( level = 0; (piece = line.slice(0, 2)) == indentation; level++) {
+					line = line.slice(indentation.length);
+				}
+
+				// Once the indentation level is determined, split 
+				// the rest of the command into keywords.
+
 			}
+
 		});
 	},
 
@@ -110,7 +149,22 @@ _.extend(inkblot.prototype, {
 	// Removes test comments beginning with `searchString` found in 
 	// the file.
 	clean: function(filenames) {
+		this.load(filenames, function(filename, data) {
+			var line, index;
+			
+			for(line = ''; (index = data.indexOf(this.options.searchString)) !== -1; ) {
+				line = data.slice(index, data.indexOf('\n', index) + 1);
 
+				data = data.replace(line, "");
+			}
+
+			fs.writeFile(filename, data, function(err) {
+				if(err) {
+					throw err;
+				}
+			});
+
+		});
 	}
 
 });
