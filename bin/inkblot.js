@@ -25,6 +25,11 @@ var glob = require('glob');
 var tabs = '\t';
 var spaces = '  ';
 
+var commandObj = function() {
+	this.parent = null;
+	this.children = [];
+};
+
 // Test Functions
 // --------------
 // var describe = function(description, data, cb) {
@@ -56,6 +61,8 @@ var inkblot = module.exports = function(options) {
 
 	}, this.options);
 
+	this.indentation = (this.options.indentUsing === 'tabs') ? tabs : spaces;
+
 };
 
 _.extend(inkblot.prototype, {
@@ -80,7 +87,7 @@ _.extend(inkblot.prototype, {
 				// inkblot comments.
 				var j;
 				for(j = matches.length; j--; ) {
-					process.stdout.write('[ ' + matches[j] + ' ]\n');
+					process.stdout.write('[ in: ' + matches[j] + ' ]\n');
 					this.parse(matches[j], cb, context);
 				}
 
@@ -111,9 +118,14 @@ _.extend(inkblot.prototype, {
 	compile: function(filenames) {
 		this.load(filenames, function(filename, data) {
 			var line, start, end;
-			var level, indentation, piece;
+
+			var tests = [];
+			var testObj;
 
 			var base, ext;
+			// The variable to hold the `.spec` file stream to be 
+			// written once compilation is done.
+			var spec = '';
 			
 			// Find the comments in the file.
 			for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
@@ -125,40 +137,88 @@ _.extend(inkblot.prototype, {
 
 				// Get workable comment that we can perform 
 				// operations on and modify.
-				line = line.slice(this.options.searchString.length + 1);
+				line = line.slice(this.options.searchString.length + 1, -1);
 
-				if(line.length > 0) {
-					process.stdout.write(line);
-				}
-
-				// Take lines of comments and determine the 
-				// indentation level of each comment. This will 
-				// determine nesting. Once this is determined, it 
-				// will be possible to interpret the sub-commands of 
-				// each comment.
-				indentation = (this.options.indentUsing === 'tabs') ? tabs : spaces;
-
-				for(level = 0; (piece = line.slice(0, 2)) == indentation; level++) {
-					line = line.slice(indentation.length);
-				}
-
-				// Once the indentation level is determined, split 
-				// the rest of the command into keywords.
+				tests.push(line);
 
 			}
+
+			// Once we have the comment in a workable form, it is 
+			// time to actually generate the test spec file. We 
+			// do this by piping the commands successively into 
+			// nested functions, each writing a piece of the spec 
+			// to the stream, which will form a neat, nested 
+			// specification once written.
+			console.log(tests);
+			testObj = this._makeObj(tests);
+
+			console.log(testObj);
 
 			// Write the file to a new spec file.
 			ext = path.extname(filename);
 			base = path.basename(filename, ext);
-			filename = base + '.spec' + ext;
-			console.log(filename);
-			// fs.writeFile(filename, data, function(err) {
-			// 	if(err) {
-			// 		throw err;
-			// 	}
-			// });
+			
+			filename = path.join(this.options.out, base + '.spec' + ext);
+
+			process.stdout.write('[ out: ' + filename + ' ]\n');
+			fs.writeFile(filename, spec, function(err) {
+				if(err) {
+					throw err;
+				}
+			});
 
 		}.bind(this));
+	},
+
+	_makeObj: function(tests) {
+		var i, j;
+		var result = {};
+		var children = [];
+
+		var id;
+
+		// Run through all tests.
+		for(i = 0; i < tests.length; i++) {
+			// Collect the ones that are at a 'higher' indentation level than the current command structure.
+			if(this._findLevel( tests[i] ) > 0) {
+				console.log("child:", tests[i]);
+				children.push(tests[i]);
+			}
+			// If you run into a command that is at the same level, create an object using children and start over.
+			else {
+				// Reduce indentation level by one.
+
+				if(children.length > 0) {
+					for(j = 0; j < children.length; j++) {
+						children[j] = children[j].slice(this.indentation.length);
+					}
+					// And run childrn through the same process.
+					this._makeObj(children);
+				}
+
+				console.log("parent:", tests[i]);
+
+				children = [];
+			}
+
+		}
+
+		return result;
+
+	},
+
+	_findLevel: function(line) {
+		var level, piece;
+		// Take lines of comments and determine the 
+		// indentation level of each comment. This will 
+		// determine nesting. Once this is determined, it 
+		// will be possible to interpret the sub-commands of 
+		// each comment.
+		for(level = 0; (piece = line.slice(0, 2)) == this.indentation; level++) {
+			line = line.slice(this.indentation.length);
+		}
+
+		return level;
 	},
 
 	// Clean Comments
