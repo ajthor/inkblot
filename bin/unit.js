@@ -24,9 +24,19 @@ exports.describe = function(obj, cb) {
 };
 
 exports.it = function(obj, cb) {
-	var s;
-	s = 'it(\'' + obj.command + '\', function() {\n\n';
-	s += cb(obj.children);
+	var s = '\tit(\'' + obj.command + '\', function() {\n';
+		s += this.make(obj.children);
 	s += '});\n\n';
 	return s;
 };
+
+
+
+// describe(obj, function(children) {
+// 	var s = '';
+// 	var i;
+
+// 	s += make(children);
+
+// 	return s;
+// });
