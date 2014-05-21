@@ -127,6 +127,8 @@ _.extend(inkblot.prototype, {
 
 			testObj = this.generateJSON(tests);
 
+			stream = unit.make(testObj);
+
 			// Write the file to a new spec file.
 			ext = path.extname(filename);
 			base = path.basename(filename, ext);
@@ -147,6 +149,7 @@ _.extend(inkblot.prototype, {
 	// ----------------------
 	// Interprets the comments and creates a nested JSON object with 
 	// some metadata about each test. 
+	
 	// Creates an object set up as a tree, with 'children' nodes to 
 	// facilitate nesting. After the object has been created, it will 
 	// be run through the stream writing function to actually 
@@ -215,7 +218,9 @@ _.extend(inkblot.prototype, {
 
 
 	generateTests: function(obj) {
+		var stream = '';
 
+		stream = unit.make(obj, stream);
 	},
 
 	// Get Indentation Level

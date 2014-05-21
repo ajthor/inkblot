@@ -1,4 +1,5 @@
-var make = exports.make = function(obj, stream) {
+var make = exports.make = function(obj) {
+	var stream = '';
 	var cmd;
 	var i;
 	for(i in obj) {
@@ -24,8 +25,9 @@ exports.describe = function(obj, cb) {
 };
 
 exports.it = function(obj, cb) {
-	var s = '\tit(\'' + obj.command + '\', function() {\n';
-		s += this.make(obj.children);
+	var s;
+	s = 'it(\'' + obj.command + '\', function() {\n\n';
+	s += cb(obj.children);
 	s += '});\n\n';
 	return s;
 };
