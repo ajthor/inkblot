@@ -20,17 +20,13 @@ var util = require('util');
 var path = require('path');
 
 var glob = require('glob');
+var beautify = require('js-beautify').js_beautify;
 
 var unit = require('./unit.js');
 
 // *Globals*
 var tabs = '\t';
 var spaces = '  ';
-
-var commandObj = function() {
-	this.parent = null;
-	this.children = [];
-};
 
 // Inkblot Object
 // ==============
@@ -41,15 +37,7 @@ var inkblot = module.exports = function(options) {
 		searchString: '// t:',
 		indentUsing: 'spaces',
 
-		out: './test',
-		
-		templates: [
-			'describe', 
-			'it', 
-			'module', 
-			'function', 
-			'object'
-		]
+		out: './test'
 
 	}, this.options);
 
@@ -64,45 +52,39 @@ _.extend(inkblot.prototype, {
 	// file can be loaded, it throws an error. If a file IS loaded, 
 	// it runs through the file looking for inkblot comments. If it 
 	// finds any, it calls the callback function to handle them.
-	load: function(filenames, cb, context) {
+	load: function(filenames, cb) {
 		if(!_.isFunction(cb)) throw 'Must supply a callback to \'search\'.';
 		if(!Array.isArray(filenames)) filenames = [filenames];
 
 		var i;
 		for(i = filenames.length; i--; ) {
 
-			glob( filenames[i], function(err, matches) {
+			glob( filenames[i], function(err, files) {
 				if(err) {
 					throw err;
 				}
 				// If any matches are found, parse them for 
 				// inkblot comments.
+				var filename;
 				var j;
-				for(j = matches.length; j--; ) {
-					process.stdout.write('[ ' + matches[j] + ' ]\n');
-					this.parse(matches[j], cb, context);
+				for(j = files.length; j--; ) {
+					filename = files[j];
+					process.stdout.write('[ ' + filename + ' ]\n');
+
+					fs.readFile(filename, function(err, data) {
+						data = data.toString('utf8');
+						if(data.indexOf(this.options.searchString) === -1) {
+							console.log('No inkblot comments found in %s', filename);
+							return;
+						}
+
+						cb.call(this, filename, data);
+
+					}.bind(this));
 				}
 
 			}.bind(this));
 		}
-	},
-
-	parse: function(filename, cb, context) {
-		if(!_.isFunction(cb)) throw 'Must supply a callback to \'parse\'.';
-		if(typeof context === 'undefined' || context === null) {
-			context = this;
-		}
-
-		fs.readFile(filename, function(err, data) {
-			data = data.toString('utf8');
-			if(data.indexOf(this.options.searchString) === -1) {
-				console.log('No inkblot comments found in %s', filename);
-				return;
-			}
-
-			cb.call(context, filename, data);
-
-		}.bind(this));
 	},
 
 	// Compile Function 
@@ -142,16 +124,19 @@ _.extend(inkblot.prototype, {
 			// nested functions, each writing a piece of the spec 
 			// to the stream, which will form a neat, nested 
 			// specification once written.
-			console.log(tests);
-			testObj = this._makeObj(tests);
+			// console.log(tests);
 
-			stream = unit.make(testObj, stream);
+			testObj = this.generateJSON(tests);
+
+			stream = unit.make(testObj);
 
 			// Write the file to a new spec file.
 			ext = path.extname(filename);
 			base = path.basename(filename, ext);
 			
 			filename = path.join(this.options.out, base + '.spec' + ext);
+
+			stream = beautify(stream, {indent_size: 4});
 
 			fs.writeFile(filename, stream, function(err) {
 				if(err) {
@@ -163,15 +148,18 @@ _.extend(inkblot.prototype, {
 		}.bind(this));
 	},
 
-	// Make Object Function
-	// --------------------
+	// Generate JSON Function
+	// ----------------------
+	// Interprets the comments and creates a nested JSON object with 
+	// some metadata about each test. 
+	
 	// Creates an object set up as a tree, with 'children' nodes to 
 	// facilitate nesting. After the object has been created, it will 
 	// be run through the stream writing function to actually 
 	// generate the stream to write to the spec file.
 
 	// TODO: refactor to improve DRY coding techniques. I feel I could remove about ten lines from this function.
-	_makeObj: function(tests) {
+	generateJSON: function(tests) {
 		var id;
 
 		var i, j;
@@ -186,14 +174,14 @@ _.extend(inkblot.prototype, {
 			// push all children which have accumulated to the 
 			// previous parent and set up a new parent to add 
 			// children to.
-			if(this._findLevel(tests[i]) === 0) {
+			if(this._getLevel(tests[i]) === 0) {
 				
 				if(children.length > 0) {
 					for(j = 0; j < children.length; j++) {
 						children[j] = children[j].slice(this.indentation.length);
 					}
 
-					parent.children = this._makeObj(children);
+					parent.children = this.generateJSON(children);
 				}
 
 				// Make a new parent. Default key:value pairs are 
@@ -225,19 +213,28 @@ _.extend(inkblot.prototype, {
 				children[j] = children[j].slice(this.indentation.length);
 			}
 
-			parent.children = this._makeObj(children);
+			parent.children = this.generateJSON(children);
 		}
 
 		return result;
 	},
 
-	_findLevel: function(line) {
+
+	generateTests: function(obj) {
+		var stream = '';
+
+		stream = unit.make(obj, stream);
+	},
+
+	// Get Indentation Level
+	// ---------------------
+	// Take lines of comments and determine the indentation level of 
+	// each comment. This will determine nesting. Once this is 
+	// determined, it will be possible to interpret the sub-commands 
+	// of each comment.
+	_getLevel: function(line) {
 		var level, piece;
-		// Take lines of comments and determine the 
-		// indentation level of each comment. This will 
-		// determine nesting. Once this is determined, it 
-		// will be possible to interpret the sub-commands of 
-		// each comment.
+
 		for(level = 0; (piece = line.slice(0, 2)) == this.indentation; level++) {
 			line = line.slice(this.indentation.length);
 		}
