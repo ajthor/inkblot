@@ -20,6 +20,7 @@ var util = require('util');
 var path = require('path');
 
 var glob = require('glob');
+var beautify = require('js-beautify').js_beautify;
 
 var unit = require('./unit.js');
 
@@ -134,6 +135,8 @@ _.extend(inkblot.prototype, {
 			base = path.basename(filename, ext);
 			
 			filename = path.join(this.options.out, base + '.spec' + ext);
+
+			stream = beautify(stream, {indent_size: 4});
 
 			fs.writeFile(filename, stream, function(err) {
 				if(err) {
