@@ -7,13 +7,37 @@ var make = exports.make = function(obj) {
 
 		if(exports[cmd] && cmd !== 'make') {
 			stream += exports[cmd](obj[i], function(children) {
-				return this.make(children);
+				var s = '';
+				var j;
+
+				if(children !== null) {
+					for(j in children) {
+						s += this.variables(children[j]);
+					}
+				}
+
+				s += this.make(children);
+
+				return s;
 
 			}.bind(this));
 		}
 	}
 
 	return stream;
+};
+
+exports.variables = function(obj) {
+	var s = '';
+	var i;
+	var rx = /\{([^}]+)\}/gim;
+	var matches;
+
+	while((matches = rx.exec(obj.command)) !== null) {
+		s += 'var ' + matches[1] + ';\n\n';
+	}
+
+	return s;
 };
 
 exports.describe = function(obj, cb) {
