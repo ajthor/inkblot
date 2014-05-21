@@ -37,10 +37,10 @@ var usage = function() {
 // t: describe parseArgv
 // t:   it should return an object
 // t: describe function {hello}
-// t:   it should accept argument: name
-// t:   it should return a string
+// t:   it should accept argument: {name}
+// t:   it should return a {string}
 // t:   it should return: "Hello, " + name
-// t:   describe function {hello}
+// t:   describe {fun} {hello}
 // t:     it should accept argument: name
 // t:     it should return a string
 // t:     it should return: "Hello, " + name
