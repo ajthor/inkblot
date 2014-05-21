@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - '0.10'
+branches:
+  except:
+    -experimental
+notifications:
+  email:
+    on_success: change
+    on_failure: change
