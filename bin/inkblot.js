@@ -15,12 +15,29 @@ var fs = require('fs');
 // Require underscore.
 var _ = require('underscore');
 
+// Require async.
 var async = require('async');
+
 var util = require('util');
 var path = require('path');
 
 var glob = require('glob');
 var beautify = require('js-beautify').js_beautify;
+
+
+
+// Load Template Function (Memoized)
+// ---------------------------------
+// In order to avoid loading the same template time after time, I 
+// will memoize the output in order to load each template only once.
+var loadTemplate = async.memoize(function(obj, callback) {
+	var file = path.resolve(path.join('../inkblot/lib/templates', obj.cmd + '.js'));
+
+	fs.readFile(file, 'utf8', function(err, data) {
+		if(err) callback(err);
+		else callback(null, obj, data);
+	});
+});
 
 // Inkblot Object
 // ==============
@@ -43,9 +60,7 @@ _.extend(inkblot.prototype, {
 	run: function(files) {
 		if(!Array.isArray(files)) files = [files];
 		async.each(files, this.compile.bind(this), function(err) {
-			if(err) {
-				console.log(err.message);
-			}
+			if(err) throw err;
 			console.log('Task completed.');
 		});
 	},
@@ -103,6 +118,8 @@ _.extend(inkblot.prototype, {
 		function(err, result) {
 			var ext, base;
 
+			console.log("result:", result);
+
 			if(err) {
 				console.log(err.message);
 			}
@@ -144,56 +161,108 @@ _.extend(inkblot.prototype, {
 	// Create Spec Function
 	// --------------------
 	// 
-	createSpec: function(comments, callback) {
-
+	createSpec: function(comments, done) {
 		var stream = '';
+		
+		async.waterfall([
+			function(callback) {
+				var obj = this.makeObject(comments);
+				console.log(obj);
+				callback(null, obj);
+			}.bind(this),
 
-		var obj = this.makeObject(comments);
-		// console.log(obj);
+			function generate(obj, callback) {
+				async.eachSeries(obj, function(item, next) {
+					var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
+					var t;
 
-		// If current level = next level : siblings
-		// If current level > next level : not a child
-		// If current level < next level : child
+					fs.readFile(file, 'utf8', function(err, data) {
+						t = _.template(data, item);
+						// console.log(t);
+						stream += t;
+						next(null);
+					});
+				},
+				function(err) {
+					if(err) console.log(err);
+				});
 
-		callback(null, stream);
+				callback(null, stream);
+			}
+		],
+		function(err, result) {
+			if(err) console.log(err);
+			done(null, stream);
+		});
 	},
 
 	// Make Object Function
 	// --------------------
 	makeObject: function(comments) {
-		if(comments.length == 0) return null;
-		var i, j;
-
-		var currentLevel = this.indentLevel(comments[0]);
-		var collected = [];
-
-		var result = {};
-
 		var id;
 
+		var i, j;
+
+		var parent = comments[0];
+		var children = [];
+
+		var result = [];
 		for(i = 0; i < comments.length; i++) {
-			console.log("i: %d - %s", i, comments[i]);
-			collected = [];
 
-			id = _.uniqueId();
+			// Test if the current line is a 'parent'. If it is, then 
+			// push all children which have accumulated to the 
+			// previous parent and set up a new parent to add 
+			// children to.
+			if(this.indentLevel(comments[i]) === 0) {
 
-			result[id] = {
-				desc: comments[i],
-				children: null
+				if(children.length > 0) {
+					for(j = 0; j < children.length; j++) {
+						children[j] = children[j].slice(2);
+					}
+
+					parent.children = this.makeObject(children);
+				}
+
+				// Make a new parent. Default key:value pairs are 
+				// `command` and `children`. 'Command' holds the full 
+				// string in the line, minus any indentation.
+				
+				// id = _.uniqueId();
+
+				// parent = result[id] = {
+				// 	description: comments[i],
+				// 	cmd: comments[i].split(' ')[0],
+				// 	children: null
+				// };
+
+				parent = {
+					description: comments[i],
+					cmd: comments[i].split(' ')[0],
+					children: null
+				};
+
+				result.push(parent);
+
+				children = [];
+
+			}
+			// This line has an indentation level higher than the 
+			// current indentation level; it is a 'child' element and 
+			// we should add it to the list of children to be added.
+			else {
+				children.push(comments[i]);
 			}
 
-			for(j = i + 1; j < comments.length; j++) {
-				if(currentLevel >= this.indentLevel(comments[j]))
-					break;
+		}
 
-				console.log("  j: %d", j);
-				collected.push( comments.splice(j, 1) );
-
-				console.log(comments);
+		// Push any last children to the result object. This handles 
+		// any 'dangling' children that appear last in the list.
+		if(children.length > 0) {
+			for(j = 0; j < children.length; j++) {
+				children[j] = children[j].slice(2);
 			}
 
-			result[id].children = this.makeObject(collected);
-
+			parent.children = this.makeObject(children);
 		}
 
 		return result;
