@@ -173,7 +173,7 @@ _.extend(inkblot.prototype, {
 				callback(null, obj);
 			}.bind(this),
 
-			this.generate
+			this.generate.bind(this)
 		],
 		function(err, result) {
 			if(err) console.log(err);
@@ -196,32 +196,39 @@ _.extend(inkblot.prototype, {
 			fs.readFile(file, 'utf8', function(err, data) {
 				if(err) console.log(err);
 
-				async.waterfall([
-					// If the node has children, meaning there are 
-					// some items which should go inside this one, 
-					// then recursively call generate on the object 
-					// using async function calls.
-					function(callback) {
-						if(item.children.length) {
+				// If the node has children, meaning there are some 
+				// items which should go inside this one, then 
+				// recursively call generate on the object using 
+				// async function calls.
+				if(item.children) {
+					async.waterfall([
+						function(callback) {
+							callback(null, item.children);
+						},
 
-						}
-						callback()
-					}
+						this.generate.bind(this)
+					], 
+					function(err, result) {
+						if(err) console.log(err);
 
-				], 
-				function(err, result) {
-					if(err) console.log(err);
-				});
+						item.children = result;
 
-				// Populate the template with values from the object.
-				t = _.template(data, item);
+						t = _.template(data, item);
+						stream += t;
 
-				stream += t;
+						next(null);
+					});
+				}
+				else {
+					// Populate the template with values from item.
+					t = _.template(data, item);
+					stream += t;
 
-				next(null);
-			});
+					next(null);
+				}
+			}.bind(this));
 
-		}, 
+		}.bind(this), 
 		function(err) {
 			if(err) console.log(err);
 			callback(null, stream);
