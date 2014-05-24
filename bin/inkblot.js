@@ -17,14 +17,15 @@ var _ = require('underscore');
 
 // Require async.
 var async = require('async');
-
-var util = require('util');
 var path = require('path');
 
 var glob = require('glob');
 var beautify = require('js-beautify').js_beautify;
 
 
+// Util Functions Used in Templates
+// --------------------------------
+var utils = require('../lib/utils.js');
 
 // Load Template Function (Memoized)
 // ---------------------------------
@@ -193,6 +194,10 @@ _.extend(inkblot.prototype, {
 			var t;
 			var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
 
+			// Extend 'item' object with all utility 
+			// commands and properties.
+			item = _.extend(item, utils);
+
 			fs.readFile(file, 'utf8', function(err, data) {
 				if(err) console.log(err);
 
@@ -262,18 +267,7 @@ _.extend(inkblot.prototype, {
 					parent.children = this.makeObject(children);
 				}
 
-				// Make a new parent. Default key:value pairs are 
-				// `command` and `children`. 'Command' holds the full 
-				// string in the line, minus any indentation.
-				
-				// id = _.uniqueId();
-
-				// parent = result[id] = {
-				// 	description: comments[i],
-				// 	cmd: comments[i].split(' ')[0],
-				// 	children: null
-				// };
-
+				// Make a new parent.
 				parent = {
 					description: comments[i],
 					cmd: comments[i].split(' ')[0],
