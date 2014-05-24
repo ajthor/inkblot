@@ -1,99 +1,64 @@
 var _ = require('underscore');
+var async = require('async');
 
-var make = exports.make = function(obj) {
-	var stream = '';
-	var cmd;
-	var i;
-	for(i in obj) {
-		cmd = obj[i].command.split(' ')[0];
+var fs = require('fs');
+var path = require('path');
 
-		if(exports[cmd] && cmd !== 'make') {
-			stream += exports[cmd](obj[i], function(children) {
-				var s = '';
-				var j;
+exports.generate = function(obj, callback) {
+	var file = path.join('../lib/templates', obj.cmd + '.js');
 
-				if(children !== null) {
-					for(j in children) {
-						s += this.variables(children[j]);
-					}
-				}
 
-				s += this.make(children);
+	fs.readFile(file, 'utf8', function(err, data) {
+		if(err) throw err;
 
-				return s;
+		var template;
+		var stream = '';
 
-			}.bind(this));
-		}
-	}
+		var childStream = '';
 
-	return stream;
+		async.eachSeries(obj.children, function(child, next) {
+			children += this.generate(child);
+			next(null);
+		},
+		function(err) {
+			if(err) throw err;
+
+			var obj = {
+				description: obj.desc,
+				children: childStream
+			};
+
+			stream = _.template(data);
+
+			callback(null, stream);
+		});
+
+		
+	});
+
 };
 
-exports.getVariables = function(obj) {
-	var rx = /\{([^}]+)\}/g;
-	var match, matches = [];
+	// var stream = '';
+	// var cmd;
+	// var i;
+	// for(i in obj) {
+	// 	cmd = obj[i].command.split(' ')[0];
 
-	while((match = rx.exec(obj.command)) !== null) {
-		matches.push(match[1]);
-	}
+	// 	if(exports[cmd] && cmd !== 'make') {
+	// 		stream += exports[cmd](obj[i], function(children) {
+	// 			var s = '';
+	// 			var j;
 
-	return matches;
-};
+	// 			if(children !== null) {
+	// 				for(j in children) {
+	// 					s += this.variables(children[j]);
+	// 				}
+	// 			}
 
-exports.variables = function(obj) {
-	var s = '';
-	var i;
+	// 			s += this.make(children);
 
-	var variables = this.getVariables(obj);
-	variables = _.unique(variables);
+	// 			return s;
 
-	for(i = variables.length; i--; ) {
-		s += 'var ' + variables[i] + ';\n\n';
-	}
-
-	return s;
-};
-
-exports.describe = function(obj, cb) {
-	var s;
-	s = 'describe(\'' + obj.command + '\', function() {\n\n';
-	s += cb(obj.children);
-	s += '});\n\n';
-	return s;
-};
-
-exports.it = function(obj, cb) {
-	var s;
-	s = 'it(\'' + obj.command + '\', function() {\n\n';
-	s += cb(obj.children);
-	s += '});\n\n';
-	return s;
-};
-
-exports.require = function(obj, cb) {
-	var s;
-	var i;
-	var variables = this.getVariables(obj);
-	if(variables.length !== 2) {
-		s = 'var ' + variables[0] + ' = require(\'' + variables[1] + '\');';
-	}
-	else if(variables.length === 1) {
-		s = 'var ' + variables[0] + ' = require(\'' + variables[0] + '\');';
-	}
-	else {
-		throw 'Require statement for ' + obj.command + ' must have one or two variables.';
-	}
-
-	return s;
-};
-
-
-
-// describe(obj, function(children) {
-// 	var s = '';
-// 	var i;
-
-// 	s += make(children);
-
-// 	return s;
-// });
+	// 		}.bind(this));
+	// 	}
+	// }

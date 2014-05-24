@@ -15,7 +15,8 @@
     "glob": "git://github.com/isaacs/node-glob",
     "js-beautify": "^1.5.1",
     "minimist": "^0.1.0",
-    "underscore": "^1.6.0"
+    "underscore": "^1.6.0",
+    "when": "^3.2.1"
   },
   "devDependencies": {
     "github": "^0.1.16",

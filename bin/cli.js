@@ -18,12 +18,6 @@ var inkblot = require('./inkblot.js');
 
 var usageMsg = 'usage:  inkblot <command> [options]';
 
-// The pre-defined list of commands available to the CLI.
-var commandList = [
-	'compile',
-	'clean'
-];
-
 var usage = function() {
 	console.log(usageMsg);
 }
@@ -38,8 +32,8 @@ var usage = function() {
 // t:   it should return an object
 // t: describe function {hello}
 // t:   it should accept argument: {name}
-// t:   it should return a {string}
 // t:   it should return: "Hello, " + name
+// t:   it should return a {string}
 // t:   describe {fun} {hello}
 // t:     it should accept argument: name
 // t:     it should return a string
@@ -77,27 +71,10 @@ var parseArgv = function(argv) {
 // it looks through.
 var i, len;
 var argv = process.argv.slice(3);
-var command = process.argv[2];
 
-var obj;
-var utility;
+var obj = parseArgv(argv);
+var utility = new inkblot(obj);
 
-if(_.contains(commandList, command)) {
+utility.run(obj.files);
 
-	obj = parseArgv(argv);
-	utility = new inkblot(obj);
-	
-	if(command === 'compile') {
-		utility.compile(obj.files);
-	}
-	else if(command === 'clean') {
-		utility.clean(obj.files);
-	}
 
-}
-// If something went wrong, show the usage information and exit with 
-// an error signal.
-else {
-	usage();
-	process.exit(1);
-}
