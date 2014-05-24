@@ -35,7 +35,9 @@ var loadTemplate = async.memoize(function(obj, callback) {
 
 	fs.readFile(file, 'utf8', function(err, data) {
 		if(err) callback(err);
-		else callback(null, obj, data);
+		else {
+			callback(null, obj, data);
+		}
 	});
 });
 
@@ -118,8 +120,6 @@ _.extend(inkblot.prototype, {
 		function(err, result) {
 			var ext, base;
 
-			console.log("result:", result);
-
 			if(err) {
 				console.log(err.message);
 			}
@@ -160,39 +160,71 @@ _.extend(inkblot.prototype, {
 
 	// Create Spec Function
 	// --------------------
-	// 
+	// The create spec function works by asynchronously creating an 
+	// object and passing it into the `generate` function. It returns 
+	// the result of the generate function to the `compile` function 
+	// to save into a spec file.
 	createSpec: function(comments, done) {
-		var stream = '';
-		
 		async.waterfall([
+			// Make Object
+			// -----------
 			function(callback) {
 				var obj = this.makeObject(comments);
-				console.log(obj);
 				callback(null, obj);
 			}.bind(this),
 
-			function generate(obj, callback) {
-				async.eachSeries(obj, function(item, next) {
-					var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
-					var t;
-
-					fs.readFile(file, 'utf8', function(err, data) {
-						t = _.template(data, item);
-						// console.log(t);
-						stream += t;
-						next(null);
-					});
-				},
-				function(err) {
-					if(err) console.log(err);
-				});
-
-				callback(null, stream);
-			}
+			this.generate
 		],
 		function(err, result) {
 			if(err) console.log(err);
-			done(null, stream);
+			done(null, result);
+		});
+	},
+
+	// Generate
+	// --------
+	// Generates the actual text which will go inside the spec file. 
+	// It loads the templates from file and populates them with 
+	// values from each item in the object passed to it.
+	generate: function(obj, callback) {
+		var stream = '';
+
+		async.eachSeries(obj, function(item, next) {
+			var t;
+			var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
+
+			fs.readFile(file, 'utf8', function(err, data) {
+				if(err) console.log(err);
+
+				async.waterfall([
+					// If the node has children, meaning there are 
+					// some items which should go inside this one, 
+					// then recursively call generate on the object 
+					// using async function calls.
+					function(callback) {
+						if(item.children.length) {
+
+						}
+						callback()
+					}
+
+				], 
+				function(err, result) {
+					if(err) console.log(err);
+				});
+
+				// Populate the template with values from the object.
+				t = _.template(data, item);
+
+				stream += t;
+
+				next(null);
+			});
+
+		}, 
+		function(err) {
+			if(err) console.log(err);
+			callback(null, stream);
 		});
 	},
 
