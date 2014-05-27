@@ -79,6 +79,12 @@ _.extend(inkblot.prototype, {
 		var searchString = this.options.searchString;
 		var destination = this.options.out;
 
+		var ext, base, specFile;
+
+		ext = path.extname(file);
+		base = path.basename(file, ext);
+		specFile = path.join(destination, base + '.spec' + ext);
+
 		async.waterfall([
 			// Load File
 			// ---------
@@ -105,13 +111,67 @@ _.extend(inkblot.prototype, {
 			// Parse Comments
 			// --------------
 			// Convert the comments to an array of workable commands.
-			this.findComments.bind(this),
+			function findComments(data, callback) {
+				var comments = [];
+				var line, start, end;
+
+				for(line = ''; (start = data.indexOf(searchString)) !== -1; ) {
+					end = data.indexOf('\n', start) + 1;
+					line = data.slice(start, end);
+					// Remove the line from the data stream so that you 
+					// don't cycle over the same comment twice.
+					data = data.replace(line, "");
+					// Get workable comment that we can perform 
+					// operations on and modify.
+					line = line.slice(searchString.length + 1, -1);
+
+					comments.push(line);
+				}
+
+				callback(null, comments);
+			},
 			
-			// Create Spec
-			// -----------
-			// Using another async function call, create a spec from 
-			// the command object.
-			this.createSpec.bind(this)
+			// Create Spec Function
+			// --------------------
+			// The create spec function works by asynchronously creating an 
+			// object and passing it into the `generate` function. It returns 
+			// the result of the generate function to the `compile` function 
+			// to save into a spec file.
+			function createSpec(comments, spec, done) {
+				async.waterfall([
+					// Make Object
+					// -----------
+					function(callback) {
+						var obj = this.makeObject(comments);
+						callback(null, obj);
+					}.bind(this),
+
+					// Load Existing Spec
+					// ------------------
+					// Load the existing spec into memory.
+					function loadSpec(obj, callback) {
+						fs.exists(specFile, function(exists) {
+							if(exists) {
+								console.log('The spec file already exists. Appending tests to file.');
+								fs.readFile(specFile, 'utf8', function(err, data) {
+									if(err) console.log(err);
+									callback(null, obj, data);
+								});
+							}
+							else
+								callback(null, obj, null);
+						});
+					},
+
+					// Generate Spec File
+					// ------------------
+					this.generate.bind(this)
+				],
+				function(err, result) {
+					if(err) console.log(err);
+					done(null, result);
+				});
+			}.bind(this)
 		],
 		// Save File
 		// ---------
@@ -119,124 +179,17 @@ _.extend(inkblot.prototype, {
 		// to the output directory if no errors occurred 
 		// along the way.
 		function(err, result) {
-			var ext, base;
-
 			if(err) {
 				console.log(err.message);
 			}
 			else {
-				ext = path.extname(file);
-				base = path.basename(file, ext);
-				file = path.join(destination, base + '.spec' + ext);
-
 				result = beautify(result, {indent_size: 4});
 
-				fs.writeFile(file, result, function(err) {
+				fs.writeFile(specFile, result, function(err) {
 					if(err) throw err;
-					process.stdout.write('Compiled: [ ' + file + ' ]\n');
+					process.stdout.write('Compiled: [ ' + specFile + ' ]\n');
 				});
 			}
-		});
-	},
-
-	findComments: function(data, callback) {
-		var comments = [];
-		var line, start, end;
-
-		for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
-			end = data.indexOf('\n', start) + 1;
-			line = data.slice(start, end);
-			// Remove the line from the data stream so that you 
-			// don't cycle over the same comment twice.
-			data = data.replace(line, "");
-			// Get workable comment that we can perform 
-			// operations on and modify.
-			line = line.slice(this.options.searchString.length + 1, -1);
-
-			comments.push(line);
-		}
-
-		return callback(null, comments);
-	},
-
-	// Create Spec Function
-	// --------------------
-	// The create spec function works by asynchronously creating an 
-	// object and passing it into the `generate` function. It returns 
-	// the result of the generate function to the `compile` function 
-	// to save into a spec file.
-	createSpec: function(comments, done) {
-		async.waterfall([
-			// Make Object
-			// -----------
-			function(callback) {
-				var obj = this.makeObject(comments);
-				callback(null, obj);
-			}.bind(this),
-
-			this.generate.bind(this)
-		],
-		function(err, result) {
-			if(err) console.log(err);
-			done(null, result);
-		});
-	},
-
-	// Generate
-	// --------
-	// Generates the actual text which will go inside the spec file. 
-	// It loads the templates from file and populates them with 
-	// values from each item in the object passed to it.
-	generate: function(obj, callback) {
-		var stream = '';
-
-		async.eachSeries(obj, function(item, next) {
-			var t;
-			var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
-
-			// Extend 'item' object with all utility 
-			// commands and properties.
-			item = _.extend(item, utils);
-
-			fs.readFile(file, 'utf8', function(err, data) {
-				if(err) console.log(err);
-
-				// If the node has children, meaning there are some 
-				// items which should go inside this one, then 
-				// recursively call generate on the object using 
-				// async function calls.
-				if(item.children) {
-					async.waterfall([
-						function(callback) {
-							callback(null, item.children);
-						},
-
-						this.generate.bind(this)
-					], 
-					function(err, result) {
-						if(err) console.log(err);
-
-						item.children = result;
-
-						t = _.template(data, item);
-						stream += t;
-
-						next(null);
-					});
-				}
-				else {
-					// Populate the template with values from item.
-					t = _.template(data, item);
-					stream += t;
-
-					next(null);
-				}
-			}.bind(this));
-
-		}.bind(this), 
-		function(err) {
-			if(err) console.log(err);
-			callback(null, stream);
 		});
 	},
 
@@ -269,6 +222,7 @@ _.extend(inkblot.prototype, {
 
 				// Make a new parent.
 				parent = {
+					raw: comments[i],
 					description: comments[i],
 					cmd: comments[i].split(' ')[0],
 					children: null
@@ -313,6 +267,64 @@ _.extend(inkblot.prototype, {
 		}
 
 		return level;
+	},
+
+	// Generate
+	// --------
+	// Generates the actual text which will go inside the spec file. 
+	// It loads the templates from file and populates them with 
+	// values from each item in the object passed to it.
+	generate: function(obj, spec, callback) {
+		var stream = '';
+
+		if(!Array.isArray(obj)) {
+			callback(null, '');
+		}
+		else {
+			async.eachSeries(obj, function(item, next) {
+				var t;
+				var file = path.resolve(path.join('../inkblot/lib/templates', item.cmd + '.js'));
+
+				// Extend 'item' object with all utility 
+				// commands and properties.
+				item = _.extend(item, utils);
+
+				// Read the template and parse the object into the 
+				// template to create a test.
+				fs.readFile(file, 'utf8', function(err, data) {
+					if(err) console.log(err);
+
+					// If the node has children, meaning there are some 
+					// items which should go inside this one, then 
+					// recursively call generate on the object using 
+					// async function calls.
+					async.waterfall([
+						function(callback) {
+							callback(null, item.children, spec);
+						},
+
+						this.generate.bind(this)
+					], 
+					function(err, result) {
+						if(err) console.log(err);
+
+						item.children = result;
+
+						t = _.template(data, item);
+
+						// Change here.
+						stream += t;
+
+						next(null);
+					});
+				}.bind(this));
+
+			}.bind(this), 
+			function(err) {
+				if(err) console.log(err);
+				callback(null, stream);
+			});
+		}
 	}
 
 });
