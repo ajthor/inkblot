@@ -10,6 +10,7 @@ var _ = require('underscore');
 var async = require('async');
 var util = require('util');
 var path = require('path');
+
 var inkblot = require('./inkblot.js');
 
 // InkBlot Command-Line Tool
@@ -28,20 +29,6 @@ var usage = function() {
 // which doesn't begin with a hyphen '-' or a double dash '--' a 
 // potential glob file name to pass to the parse function. Returns an 
 // object with all options parsed and an array of file names.
-// t: describe parseArgv
-// t:   it should return an object
-// t: describe function {hello}
-// t:   it should accept argument: {name}
-// t:   it should return: "Hello, " + name
-// t:   it should return a {string}
-// t:   describe {fun} {hello}
-// t:     it should accept argument: name
-// t:     it should return a string
-// t:     it should return: "Hello, " + name
-// t: describe function {hello}
-// t:   it should accept argument: name
-// t:   it should return a string
-// t:   it should return: "Hello, " + name
 var parseArgv = function(argv) {
 	var i;
 	var obj = {
