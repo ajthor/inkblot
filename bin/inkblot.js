@@ -128,12 +128,10 @@ _.extend(inkblot.prototype, {
 
 			// function(comments, callback) {
 			// 	var obj = this.makeObject(comments);
-
-			// 	for(var i in obj)
-			// 		console.log(obj[i]);
-
 			// 	callback(null, '');
 			// }.bind(this)
+
+			this.generate.bind(this)
 
 		],
 		// Save File
@@ -239,6 +237,60 @@ _.extend(inkblot.prototype, {
 		}
 
 		return obj;
+	},
+
+	// Generate
+	// --------
+	// Generates the actual text which will go inside the spec file. 
+	// It loads the templates from file and populates them with 
+	// values from each item in the object passed to it.
+	generate: function(obj, callback) {
+		var stream = '';
+
+		if(!Array.isArray(obj)) {
+			callback(null, '');
+		}
+		else {
+			async.eachSeries(obj, function(item, next) {
+				var t;
+				var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+
+				// Read the template and parse the object into the 
+				// template to create a test.
+				fs.readFile(file, 'utf8', function(err, data) {
+					if(err) console.log(err);
+
+					// If the node has children, meaning there are some 
+					// items which should go inside this one, then 
+					// recursively call generate on the object using 
+					// async function calls.
+					async.waterfall([
+						function(callback) {
+							callback(null, item.children);
+						},
+
+						this.generate.bind(this)
+					], 
+					function(err, result) {
+						if(err) console.log(err);
+
+						item.children = result;
+
+						t = _.template(data, item);
+
+						// Change here.
+						stream += t;
+
+						next(null);
+					});
+				}.bind(this));
+
+			}.bind(this), 
+			function(err) {
+				if(err) console.log(err);
+				callback(null, stream);
+			});
+		}
 	}
 
 });
