@@ -3,12 +3,24 @@ var inkblot = require('../bin/inkblot.js');
 
 // test: describe function hello
 // test:   it should be defined
-exports.hello = function() {
+var hello = function() {
 
 }
 
 // test: describe function world
 // test:   it should be defined
-exports.world = function() {
+var world = function() {
 
 }
+
+var dummy = module.exports = function dummy(name) {
+	// this.name = name;
+}
+
+dummy.hello = {
+	name: "Joe"
+}
+
+dummy.prototype.foo = function(dude) {
+	console.log('dude');
+};
