@@ -29,7 +29,7 @@ var test = require('../lib/utils.js').test;
 
 // Inkblot Object
 // ==============
-var inkblot = module.exports = function(options) {
+var inkblot = module.exports = function (options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
@@ -45,10 +45,12 @@ _.extend(inkblot.prototype, {
 	// Run Function
 	// ------------
 	// The entry-point into the program.
-	run: function(files) {
-		if(!Array.isArray(files)) files = [files];
-		async.each(files, this.compile.bind(this), function(err) {
-			if(err) throw err;
+	run: function (files) {
+		if (!Array.isArray(files)) files = [files];
+		async.each(files, this.compile.bind(this), function (err) {
+			if (err) {
+				throw err;
+			}
 			console.log('Task completed.');
 		});
 	},
@@ -60,7 +62,7 @@ _.extend(inkblot.prototype, {
 	// Basically, it opens the file, finds the comments, parses them 
 	// into a spec, and writes them to disk. If there is a problem, 
 	// it will not write the file.
-	compile: function(file, done) {
+	compile: function (file, done) {
 		var searchString = this.options.searchString;
 		var ext, base, specFile;
 
@@ -76,12 +78,12 @@ _.extend(inkblot.prototype, {
 
 				// Make sure the file being loaded is not a '.spec'. 
 				// If it is, quit and move on to the next file.
-				if(file.indexOf('.spec') !== -1) {
+				if (file.indexOf('.spec') !== -1) {
 					callback(new Error('Cannot run inkblot on a spec file: ' + file), null);
 				}
 
-				fs.exists(file, function(exists) {
-					if(!exists) {
+				fs.exists(file, function (exists) {
+					if (!exists) {
 						callback(new Error('File does not exist.'));
 					}
 
@@ -99,7 +101,7 @@ _.extend(inkblot.prototype, {
 				}
 				catch(e) {
 					console.warn('WARN: [ %s ] is not a loadable node module.', file);
-					if(e) {
+					if (e) {
 						console.error('Error: ', e);
 					}
 				}
@@ -114,8 +116,8 @@ _.extend(inkblot.prototype, {
 			// there are any test comments in it. 
 			// If not, no need to continue.
 			function loadFile(module, callback) {
-				fs.readFile(file, {encoding: 'utf8'}, function(err, data) {
-					if(data.indexOf(searchString) === -1) {
+				fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
+					if (data.indexOf(searchString) === -1) {
 						callback(new Error('No inkblot comments in file: ' + file), data);
 					}
 
@@ -142,7 +144,7 @@ _.extend(inkblot.prototype, {
 
 			// this.spliceComments.bind(this),
 
-			function(module, data, callback) {
+			function (module, data, callback) {
 				callback(null, module);
 			}.bind(this),
 
@@ -165,15 +167,17 @@ _.extend(inkblot.prototype, {
 		// Convert the file name into a `.spec` version and save it 
 		// to the output directory if no errors occurred 
 		// along the way.
-		function(err, result) {
-			if(err) {
+		function (err, result) {
+			if (err) {
 				console.log(err.message);
 			}
 			else {
 				result = beautify(result, {indent_size: 4});
 
-				fs.writeFile(specFile, result, function(err) {
-					if(err) throw err;
+				fs.writeFile(specFile, result, function (err) {
+					if (err) {
+						throw err;
+					}
 					process.stdout.write('Compiled: [ ' + specFile + ' ]\n');
 				});
 			}
@@ -185,11 +189,13 @@ _.extend(inkblot.prototype, {
 	// In order to avoid loading the same template time after time, I 
 	// will memoize the output in order to load each template 
 	// only once.
-	loadTemplate: async.memoize(function(obj, callback) {
+	loadTemplate: async.memoize(function (obj, callback) {
 		var file = path.resolve(path.join('../inkblot/lib/templates', obj.template + '.js'));
 
-		fs.readFile(file, 'utf8', function(err, data) {
-			if(err) callback(err);
+		fs.readFile(file, 'utf8', function (err, data) {
+			if (err) {
+				callback(err);
+			}
 			else {
 				callback(null, data);
 			}
@@ -202,7 +208,7 @@ _.extend(inkblot.prototype, {
 	// traverses the object and generates a suite of unit tests to 
 	// cover the module. If the objects have prototypes, it will 
 	// create tests to cover the prototypes as well.
-	scaffold: function(key, module) {
+	scaffold: function (key, module) {
 		var obj = [];
 		var children = [];
 		var protoChildren = [];
@@ -214,7 +220,7 @@ _.extend(inkblot.prototype, {
 		// that type. Objects and functions will require nested tests 
 		// whereas primitives will require fewer. Perhaps only 
 		// existence checks.
-		switch(typeof module) {
+		switch (typeof module) {
 			case 'object':
 			case 'function':
 
@@ -225,8 +231,8 @@ _.extend(inkblot.prototype, {
 				// If there are any static functions or properties on 
 				// this object or function, then create unit tests 
 				// for them.
-				for(item in module) {
-					if(module.hasOwnProperty(item)) {
+				for (item in module) {
+					if (module.hasOwnProperty(item)) {
 						children = children.concat(this.scaffold(item, module[item]));
 					}
 				}
@@ -234,12 +240,12 @@ _.extend(inkblot.prototype, {
 				// If the function or object has a prototype that 
 				// 'hasOwnProperties', then create unit tests for 
 				// those properties.
-				for(item in module.prototype) {
-					if(module.prototype.hasOwnProperty(item)) {
+				for (item in module.prototype) {
+					if (module.prototype.hasOwnProperty(item)) {
 						protoChildren = protoChildren.concat(this.scaffold(item, module[item]));
 					}
 				}
-				if(protoChildren.length) {
+				if (protoChildren.length) {
 					children.push(new test({
 						raw: '{name:' + key + '.prototype}'
 					}, protoChildren));
@@ -273,38 +279,37 @@ _.extend(inkblot.prototype, {
 	// Find Comments Function
 	// ----------------------
 	// Convert the comments to an array of workable commands.
-	findComments: function(module, data, callback) {
-		var rx = new RegExp(this.options.searchString);
+	findComments: function (module, data, callback) {
 
 		callback(null, module);
 	},
 
-	spliceComments: function(module, comments, callback) {
+	spliceComments: function (module, comments, callback) {
 
 		callback(null, module);
 	},
 
-	getIndent: function(comment) {
+	getIndent: function (comment) {
 		var level, piece;
-		for(level = 0; (piece = comment.slice(0, 2)) == '  '; level++) {
+		for (level = 0; (piece = comment.slice(0, 2)) == '  '; level++) {
 			comment = this.unIndent(comment);
 		}
 		return level;
 	},
 
-	unIndent: function(comment) {
+	unIndent: function (comment) {
 		return comment.slice(2);
 	},
 
-	makeObject: function(comments) {
+	makeObject: function (comments) {
 		var obj = [];
 		var current, child, children;
 		var id;
 
 		var i;
-		for(i = 0; comments.length && (i < comments.length); ) {
+		for (i = 0; comments.length && (i < comments.length); ) {
 
-			if(this.getIndent(comments[i]) === 0) {
+			if (this.getIndent(comments[i]) === 0) {
 				children = [];
 
 				while(comments[i+1] && (this.getIndent(comments[i+1]) > this.getIndent(comments[i]))) {
@@ -314,7 +319,7 @@ _.extend(inkblot.prototype, {
 					children.push(child);
 				}
 
-				if(children.length) {
+				if (children.length) {
 					children = this.makeObject(children);
 				}
 
@@ -337,35 +342,39 @@ _.extend(inkblot.prototype, {
 	// Generates the actual text which will go inside the spec file. 
 	// It loads the templates from file and populates them with 
 	// values from each item in the object passed to it.
-	generate: function(obj, callback) {
+	generate: function (obj, callback) {
 		var stream = '';
 
-		if(!Array.isArray(obj)) {
+		if (!Array.isArray(obj)) {
 			callback(null, '');
 		}
 		else {
-			async.eachSeries(obj, function(item, next) {
+			async.eachSeries(obj, function (item, next) {
 				var t;
 				var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
 
 				// Read the template and parse the object into the 
 				// template to create a test.
-				fs.readFile(file, 'utf8', function(err, data) {
-					if(err) console.log(err);
+				fs.readFile(file, 'utf8', function (err, data) {
+					if (err) {
+						console.log(err);
+					}
 
 					// If the node has children, meaning there are some 
 					// items which should go inside this one, then 
 					// recursively call generate on the object using 
 					// async function calls.
 					async.waterfall([
-						function(callback) {
+						function (callback) {
 							callback(null, item.children);
 						},
 
 						this.generate.bind(this)
 					], 
-					function(err, result) {
-						if(err) console.log(err);
+					function (err, result) {
+						if (err) {
+							console.log(err);
+						}
 
 						item.children = result;
 
@@ -379,8 +388,10 @@ _.extend(inkblot.prototype, {
 				}.bind(this));
 
 			}.bind(this), 
-			function(err) {
-				if(err) console.log(err);
+			function (err) {
+				if (err) {
+					console.log(err);
+				}
 				callback(null, stream);
 			});
 		}
