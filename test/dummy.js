@@ -7,8 +7,9 @@ var hello = function() {
 
 }
 
-// test: describe function world
-// test:   it should be defined
+// describe function world
+	// it should be defined
+	// it should return a value
 var world = function() {
 
 }
