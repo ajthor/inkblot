@@ -173,6 +173,10 @@ _.extend(inkblot.prototype, {
 
 	// Scaffold Function
 	// -----------------
+	// Using the output of a module, the `scaffold` function 
+	// traverses the object and generates a suite of unit tests to 
+	// cover the module. If the objects have prototypes, it will 
+	// create tests to cover the prototypes as well.
 	scaffold: function(key, module) {
 		var obj = [];
 		var children = [];
@@ -188,6 +192,11 @@ _.extend(inkblot.prototype, {
 		switch(typeof module) {
 			case 'object':
 			case 'function':
+
+				children.push(new test({
+					template: 'beforeEach',
+					variables: {name:key}
+				}, []));
 				// If there are any static functions or properties on 
 				// this object or function, then create unit tests 
 				// for them.
