@@ -95,6 +95,7 @@ _.extend(inkblot.prototype, {
 
 				try {
 					module = require(file);
+					module = this.scaffold(base, module);
 				}
 				catch(e) {
 					console.warn('WARN: [ %s ] is not a loadable node module.', file);
@@ -169,6 +170,71 @@ _.extend(inkblot.prototype, {
 			}
 		});
 	}),
+
+	// Scaffold Function
+	// -----------------
+	scaffold: function(key, module) {
+		var obj = [];
+		var children = [];
+		var protoChildren = [];
+
+		var item;
+
+		// Based on the type of 'module' passed to the scaffold 
+		// function, we will create different unit tests depending on 
+		// that type. Objects and functions will require nested tests 
+		// whereas primitives will require fewer. Perhaps only 
+		// existence checks.
+		switch(typeof module) {
+			case 'object':
+			case 'function':
+				// If there are any static functions or properties on 
+				// this object or function, then create unit tests 
+				// for them.
+				for(item in module) {
+					if(module.hasOwnProperty(item)) {
+						children = children.concat(this.scaffold(item, module[item]));
+					}
+				}
+
+				// If the function or object has a prototype that 
+				// 'hasOwnProperties', then create unit tests for 
+				// those properties.
+				for(item in module.prototype) {
+					if(module.prototype.hasOwnProperty(item)) {
+						protoChildren = protoChildren.concat(this.scaffold(item, module[item]));
+					}
+				}
+				if(protoChildren.length) {
+					children.push(new test({
+						raw: 'describe {name:' + key + 'Prototype}'
+					}, protoChildren));
+				}
+
+				// Once the children have been generated, we can 
+				// create the test that will be the parent of all of 
+				// these children, which is essentially the test for 
+				// the object passed to the `scaffold` function. 
+				// Using the `key` argument, or, if none is provided, 
+				// a unique identifier, generate some unit test.
+				obj.push(new test({
+					raw: 'describe ' + typeof module + ' {name:' + (key || _.uniqueId(typeof module)) + '}'
+				}, children));
+				break;
+			// If the 'module' passed to the scaffolding function is 
+			// not either an object nor a function, it means it is 
+			// another primitive data type and we simply need to 
+			// generate some test for it. Perhaps just to check if it 
+			// exists.
+			default:
+				obj.push(new test({
+					raw: 'describe {name:' + (key || _.uniqueId(typeof module)) + '}'
+				}, []));
+				break;
+		}
+
+		return obj;
+	},
 	
 	// Find Comments Function
 	// ----------------------
