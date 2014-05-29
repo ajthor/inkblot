@@ -108,31 +108,56 @@ _.extend(inkblot.prototype, {
 				}
 			}.bind(this),
 
-			// // Load File
-			// // ---------
-			// // Load the file into the stream and check to see if 
-			// // there are any test comments in it. 
-			// // If not, no need to continue.
-			// function loadFile(module, callback) {
-			// 	fs.readFile(file, {encoding: 'utf8'}, function(err, data) {
-			// 		if(data.indexOf(searchString) === -1) {
-			// 			callback(new Error('No inkblot comments in file: ' + file), data);
-			// 		}
+			// Load File
+			// ---------
+			// Load the file into the stream and check to see if 
+			// there are any test comments in it. 
+			// If not, no need to continue.
+			function loadFile(module, callback) {
+				fs.readFile(file, {encoding: 'utf8'}, function(err, data) {
+					if(data.indexOf(searchString) === -1) {
+						callback(new Error('No inkblot comments in file: ' + file), data);
+					}
 
-			// 		callback(null, module, data);
-			// 	}.bind(this));
+					callback(null, module, data);
+				}.bind(this));
 
-			// }.bind(this),
+			}.bind(this),
 
-			// // Find comments.
+			// Once we have a scaffold of the object we are going to 
+			// put into the spec file, we need to make sure we don't 
+			// overwrite the tests written by the user in the spec.
+			// To do this, we are going to take the following steps:
+			
+			// 1. find test comments in the source file
+			// 2. splice those tests into the object we have created
+			// 3. for each item in the object, we are going to splice 
+			// those tests into the spec file under the appropriate 
+			// 'describe' headings, checking to make sure the 
+			// descriptions do not clash for individual tests
+			// 4. write the spec to file
+
+			// Find comments.
 			// this.findComments.bind(this),
 
-			// function(comments, callback) {
-			// 	var obj = this.makeObject(comments);
-			// 	callback(null, '');
-			// }.bind(this)
+			// this.spliceComments.bind(this),
 
-			this.generate.bind(this)
+			function(module, data, callback) {
+				callback(null, module);
+			}.bind(this),
+
+			this.generate.bind(this),
+
+			function appendHeaders(stream, callback) {
+				stream = 'var ' + base + ' = require(\'' + path.resolve(specFile, file) + '\');\n\n' + stream;
+
+				stream = 'var chai = require(\'chai\');\n \
+					var expect = chai.expect;\n \
+					var assert = chai.assert;\n \
+					var should = chai.should();\n\n' + stream;
+
+				callback(null, stream);
+			}
 
 		],
 		// Save File
@@ -196,7 +221,7 @@ _.extend(inkblot.prototype, {
 				children.push(new test({
 					template: 'beforeEach',
 					variables: {name:key}
-				}, []));
+				}));
 				// If there are any static functions or properties on 
 				// this object or function, then create unit tests 
 				// for them.
@@ -216,7 +241,7 @@ _.extend(inkblot.prototype, {
 				}
 				if(protoChildren.length) {
 					children.push(new test({
-						raw: 'describe {name:' + key + 'Prototype}'
+						raw: '{name:' + key + '.prototype}'
 					}, protoChildren));
 				}
 
@@ -227,7 +252,7 @@ _.extend(inkblot.prototype, {
 				// Using the `key` argument, or, if none is provided, 
 				// a unique identifier, generate some unit test.
 				obj.push(new test({
-					raw: 'describe ' + typeof module + ' {name:' + (key || _.uniqueId(typeof module)) + '}'
+					raw: typeof module + ' {name:' + (key || _.uniqueId(typeof module)) + '}'
 				}, children));
 				break;
 			// If the 'module' passed to the scaffolding function is 
@@ -237,7 +262,7 @@ _.extend(inkblot.prototype, {
 			// exists.
 			default:
 				obj.push(new test({
-					raw: 'describe {name:' + (key || _.uniqueId(typeof module)) + '}'
+					raw: '{name:' + (key || _.uniqueId(typeof module)) + '}'
 				}, []));
 				break;
 		}
@@ -249,21 +274,14 @@ _.extend(inkblot.prototype, {
 	// ----------------------
 	// Convert the comments to an array of workable commands.
 	findComments: function(module, data, callback) {
-		var comments = [];
-		var line, start, end;
+		var rx = new RegExp(this.options.searchString);
 
-		for(line = ''; (start = data.indexOf(this.options.searchString)) !== -1; ) {
-			end = data.indexOf('\n', start) + 1;
-			line = data.slice(start, end);
-			// Remove the line from the data stream so that you 
-			// don't cycle over the same comment twice.
-			data = data.replace(line, "");
+		callback(null, module);
+	},
 
-			line = line.slice(this.options.searchString.length + 1, -1);
-			comments.push(line);
-		}
+	spliceComments: function(module, comments, callback) {
 
-		callback(null, comments);
+		callback(null, module);
 	},
 
 	getIndent: function(comment) {
