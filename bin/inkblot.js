@@ -25,7 +25,7 @@ var beautify = require('js-beautify').js_beautify;
 
 // Util Functions Used in Templates
 // --------------------------------
-var utils = require('../lib/utils.js');
+var test = require('../lib/utils.js').test;
 
 // Inkblot Object
 // ==============
@@ -69,28 +69,61 @@ _.extend(inkblot.prototype, {
 		specFile = path.join(this.options.out, base + '.spec' + ext);
 
 		async.waterfall([
-			// Load File
-			// ---------
-			// Load the file into the stream and check to see if 
-			// there are any test comments in it. 
-			// If not, no need to continue.
-			function load(callback) {
+			// Resolve the file name.
+			function fileName(callback) {
 				process.stdout.write('[ ' + file + ' ]\n');
+				file = path.resolve(file);
 
+				// Make sure the file being loaded is not a '.spec'. 
+				// If it is, quit and move on to the next file.
 				if(file.indexOf('.spec') !== -1) {
-					return callback(new Error('Cannot run inkblot on a spec file: ' + file), null);
+					callback(new Error('Cannot run inkblot on a spec file: ' + file), null);
 				}
-		
-				fs.readFile(file, {encoding: 'utf8'}, function(err, data) {
-					if(data.indexOf(searchString) === -1) {
-						callback(new Error('No inkblot comments in file: ' + file), data);
+
+				fs.exists(file, function(exists) {
+					if(!exists) {
+						callback(new Error('File does not exist.'));
 					}
 
-					callback(null, data);
-				}.bind(this));
+					callback(null);
+				});
+			},
 
-			}.bind(this)
+			// Load module.
+			function loadModule(callback) {
+				var module = null;
 
+				try {
+					module = require(file);
+				}
+				catch(e) {
+					console.warn('WARN: [ %s ] is not a loadable node module.', file);
+					if(e) {
+						console.error('Error: ', e);
+					}
+				}
+				finally {
+					callback(null, module);
+				}
+			}.bind(this),
+
+			// // Load File
+			// // ---------
+			// // Load the file into the stream and check to see if 
+			// // there are any test comments in it. 
+			// // If not, no need to continue.
+			// function loadFile(module, callback) {
+			// 	fs.readFile(file, {encoding: 'utf8'}, function(err, data) {
+			// 		if(data.indexOf(searchString) === -1) {
+			// 			callback(new Error('No inkblot comments in file: ' + file), data);
+			// 		}
+
+			// 		callback(null, module, data);
+			// 	}.bind(this));
+
+			// }.bind(this),
+
+			// // Find comments.
 			// this.findComments.bind(this),
 
 			// function(comments, callback) {
@@ -129,7 +162,7 @@ _.extend(inkblot.prototype, {
 	// will memoize the output in order to load each template 
 	// only once.
 	loadTemplate: async.memoize(function(obj, callback) {
-		var file = path.resolve(path.join('../inkblot/lib/templates', obj.cmd + '.js'));
+		var file = path.resolve(path.join('../inkblot/lib/templates', obj.template + '.js'));
 
 		fs.readFile(file, 'utf8', function(err, data) {
 			if(err) callback(err);
@@ -142,7 +175,7 @@ _.extend(inkblot.prototype, {
 	// Find Comments Function
 	// ----------------------
 	// Convert the comments to an array of workable commands.
-	findComments: function(data, module, callback) {
+	findComments: function(module, data, callback) {
 		var comments = [];
 		var line, start, end;
 
@@ -174,11 +207,12 @@ _.extend(inkblot.prototype, {
 
 	makeObject: function(comments) {
 		var obj = [];
-		var child, children;
+		var current, child, children;
 		var id;
 
 		var i;
 		for(i = 0; comments.length && (i < comments.length); ) {
+
 			if(this.getIndent(comments[i]) === 0) {
 				children = [];
 
@@ -194,9 +228,11 @@ _.extend(inkblot.prototype, {
 				}
 
 				id = _.uniqueId();
+				current = comments.splice(i, 1)[0];
 
 				obj.push({
-					comment: comments.splice(i, 1)[0],
+					template: current.split(' ')[0],
+					raw: current,
 					children: children
 				});
 			}
