@@ -4,6 +4,7 @@ logs
 
 # Temporary
 *.spec.js
+**/dummy*
 
 # Runtime data
 pids
