@@ -287,60 +287,109 @@ _.extend(inkblot.prototype, {
 	// Convert the comments to an array of workable commands.
 	findComments: function (module, data, callback) {
 
-		callback(null, module);
-	},
+	searchObject: function (needle, haystack) {
+		var result = null;
+		for (var i in haystack) {
+			if(haystack[i].raw === needle) {
+				// console.log('>>> MATCH <<<');
+				result = haystack[i];
+			}
+			else if(haystack[i].children.length) {
+				result = this.searchObject(needle, haystack[i].children);
+			}
 
-	spliceComments: function (module, comments, callback) {
-
-		callback(null, module);
-	},
-
-	getIndent: function (comment) {
-		var level, piece;
-		for (level = 0; (piece = comment.slice(0, 2)) == '  '; level++) {
-			comment = this.unIndent(comment);
-		}
-		return level;
-	},
-
-	unIndent: function (comment) {
-		return comment.slice(2);
-	},
-
-	makeObject: function (comments) {
-		var obj = [];
-		var current, child, children;
-		var id;
-
-		var i;
-		for (i = 0; comments.length && (i < comments.length); ) {
-
-			if (this.getIndent(comments[i]) === 0) {
-				children = [];
-
-				while(comments[i+1] && (this.getIndent(comments[i+1]) > this.getIndent(comments[i]))) {
-					child = comments.splice(i+1, 1)[0];
-					child = this.unIndent(child);
-
-					children.push(child);
-				}
-
-				if (children.length) {
-					children = this.makeObject(children);
-				}
-
-				id = _.uniqueId();
-				current = comments.splice(i, 1)[0];
-
-				obj.push({
-					template: current.split(' ')[0],
-					raw: current,
-					children: children
-				});
+			if(result) {
+				return result;
 			}
 		}
 
-		return obj;
+		return result;
+	},
+
+	getBlock: function (index, block) {
+		var end, start = block.indexOf('{', index) + 1;
+		var blockCount = 1;
+
+		var i;
+
+		for (i = start; i < block.length; i++) {
+			if (block[i] === '{') {
+				blockCount++;
+			}
+			else if (block[i] === '}') {
+				blockCount--;
+				if(blockCount === 0) {
+					// end = block.indexOf('\n', i);
+					end = i;
+					return block.slice(start, end).trim();
+				}
+			}
+		}
+	},
+
+	spliceComments: function (obj, data, callback) {
+		var rxDescribe = new RegExp('\s*\/\/ (describe (.+))\n', 'g');
+		var rxIt = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
+
+		var match;
+		var target;
+		var ref, code;
+
+		var block, itBlock;
+		var blockMatch;
+
+		var child;
+
+		while ((match = rxDescribe.exec(data)) !== null) {
+			// If the describe block already exists in the spec file, 
+			// then we can assume that the user intended to add the 
+			// unit test to that block. So, add the spec to the block 
+			// as a new child test.
+			ref = this.searchObject(match[2], obj);
+
+			block = data.slice(match.index + match[0].length, data.indexOf('// end', match.index));
+
+			// If nothing is found, we can assume that the test is 
+			// something new that we aren't expecting to be tested.
+			if (!ref) {
+				obj.push(new test({
+					raw: match[1],
+					code: block
+				}));
+			}
+			// Otherwise, it has been found. In this case, just 
+			// append the 'it' blocks to the 'describe' block if they 
+			// don't exist already.
+			else {
+
+				while ((blockMatch = rxIt.exec(block)) !== null) {
+					itBlock = this.getBlock(blockMatch.index, blockMatch.input);
+
+					target = null;
+
+					for (child in ref.children) {
+						if (ref.children[child].raw === blockMatch[1]) {
+							target = ref.children[child];
+						}
+					}
+
+					if (target) {
+						target.code = itBlock;
+					}
+					else {
+						ref.children.push(new test({
+							template: 'it',
+							raw: blockMatch[1],
+							code: itBlock
+						}));
+					}
+				}
+
+			}
+
+		}
+
+		callback(null, obj, data);
 	},
 
 	// Generate
