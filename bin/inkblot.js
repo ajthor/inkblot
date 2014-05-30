@@ -22,6 +22,12 @@ var path = require('path');
 var glob = require('glob');
 var beautify = require('js-beautify').js_beautify;
 
+// 'It' Function
+// -------------
+// Global variable definition to accomodate wayward 'it' function 
+// errors in syntax.
+global.it = function() {};
+
 
 // Util Functions Used in Templates
 // --------------------------------
