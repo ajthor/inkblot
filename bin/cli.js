@@ -10,6 +10,7 @@ var _ = require('underscore');
 var async = require('async');
 var util = require('util');
 var path = require('path');
+
 var inkblot = require('./inkblot.js');
 
 // InkBlot Command-Line Tool
@@ -18,7 +19,7 @@ var inkblot = require('./inkblot.js');
 
 var usageMsg = 'usage:  inkblot <command> [options]';
 
-var usage = function() {
+var usage = function () {
 	console.log(usageMsg);
 }
 
@@ -28,31 +29,17 @@ var usage = function() {
 // which doesn't begin with a hyphen '-' or a double dash '--' a 
 // potential glob file name to pass to the parse function. Returns an 
 // object with all options parsed and an array of file names.
-// t: describe parseArgv
-// t:   it should return an object
-// t: describe function {hello}
-// t:   it should accept argument: {name}
-// t:   it should return: "Hello, " + name
-// t:   it should return a {string}
-// t:   describe {fun} {hello}
-// t:     it should accept argument: name
-// t:     it should return a string
-// t:     it should return: "Hello, " + name
-// t: describe function {hello}
-// t:   it should accept argument: name
-// t:   it should return a string
-// t:   it should return: "Hello, " + name
-var parseArgv = function(argv) {
+var parseArgv = function (argv) {
 	var i;
 	var obj = {
 		files: []
 	};
 
-	for(i = argv.length; i--; ) {
-		if(argv[i].slice(2) == '--') { // Option
+	for (i = argv.length; i--; ) {
+		if (argv[i].slice(2) == '--') { // Option
 			obj[ argv[i].slice(2) ] = true;
 		}
-		else if(argv[i][0] === '-') { // Flag
+		else if (argv[i][0] === '-') { // Flag
 		}
 		else {
 			obj.files.push(argv[i]);

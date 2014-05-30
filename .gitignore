@@ -2,6 +2,10 @@
 logs
 *.log
 
+# Temporary
+*.spec.js
+**/dummy*
+
 # Runtime data
 pids
 *.pid
