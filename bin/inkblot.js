@@ -39,7 +39,7 @@ var inkblot = module.exports = function (options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
-		searchString: '// test:',
+		searchString: '// describe',
 		out: './test'
 
 	}, this.options);
@@ -100,19 +100,20 @@ _.extend(inkblot.prototype, {
 			// Load module.
 			function loadModule(callback) {
 				var module = null;
+				var obj;
 
 				try {
 					module = require(file);
-					module = this.scaffold(base, module);
+					obj = this.scaffold(base, module);
 				}
 				catch(e) {
 					console.warn('WARN: [ %s ] is not a loadable node module.', file);
 					if (e) {
-						console.error('Error: ', e);
+						console.error('Error: ', e.stack);
 					}
 				}
 				finally {
-					callback(null, module);
+					callback(null, obj);
 				}
 			}.bind(this),
 
@@ -121,13 +122,13 @@ _.extend(inkblot.prototype, {
 			// Load the file into the stream and check to see if 
 			// there are any test comments in it. 
 			// If not, no need to continue.
-			function loadFile(module, callback) {
+			function loadFile(obj, callback) {
 				fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 					if (data.indexOf(searchString) === -1) {
 						callback(new Error('No inkblot comments in file: ' + file), data);
 					}
 
-					callback(null, module, data);
+					callback(null, obj, data);
 				}.bind(this));
 
 			}.bind(this),
@@ -145,24 +146,28 @@ _.extend(inkblot.prototype, {
 			// descriptions do not clash for individual tests
 			// 4. write the spec to file
 
-			// Find comments.
-			// this.findComments.bind(this),
+			this.spliceComments.bind(this),
 
-			// this.spliceComments.bind(this),
 
-			function (module, data, callback) {
-				callback(null, module);
+			function (obj, data, callback) {
+				callback(null, obj);
 			}.bind(this),
 
 			this.generate.bind(this),
 
+			// Prepend Headers
+			// ---------------
+			// Prepend all headers necessary for the spec to work, 
+			// i.e. chai assertion libraries, module files, etc.
 			function appendHeaders(stream, callback) {
-				stream = 'var ' + base + ' = require(\'' + path.resolve(specFile, file) + '\');\n\n' + stream;
+				stream = 'var ' + base + ' = require(\'' + path.resolve(specFile, file) + '\');\n\n\n\n' + stream;
 
-				stream = 'var chai = require(\'chai\');\n \
-					var expect = chai.expect;\n \
-					var assert = chai.assert;\n \
-					var should = chai.should();\n\n' + stream;
+				stream = 'var chai = require(\'chai\'),\n \
+					\texpect = chai.expect,\n \
+					\tassert = chai.assert,\n \
+					\tshould = chai.should();\n\n' + stream;
+
+				stream = '// global describe, it, beforeEach, expect, should, assert, require\n\n' + stream;
 
 				callback(null, stream);
 			}
@@ -214,46 +219,52 @@ _.extend(inkblot.prototype, {
 	// traverses the object and generates a suite of unit tests to 
 	// cover the module. If the objects have prototypes, it will 
 	// create tests to cover the prototypes as well.
-	scaffold: function (key, module) {
-		var obj = [];
+	scaffold: function (key, obj) {
+		var result = [];
 		var children = [];
 		var protoChildren = [];
 
 		var item;
 
-		// Based on the type of 'module' passed to the scaffold 
+		// Based on the type of 'obj' passed to the scaffold 
 		// function, we will create different unit tests depending on 
 		// that type. Objects and functions will require nested tests 
 		// whereas primitives will require fewer. Perhaps only 
 		// existence checks.
-		switch (typeof module) {
+		switch (typeof obj) {
 			case 'object':
 			case 'function':
 
-				children.push(new test({
-					template: 'beforeEach',
-					variables: {name:key}
-				}));
+				// children.push(new test({
+				// 	template: 'beforeEach',
+				// 	variables: {
+				// 		name: key
+				// 	}
+				// }));
+
 				// If there are any static functions or properties on 
 				// this object or function, then create unit tests 
 				// for them.
-				for (item in module) {
-					if (module.hasOwnProperty(item)) {
-						children = children.concat(this.scaffold(item, module[item]));
+				for (item in obj) {
+					if (obj.hasOwnProperty(item)) {
+						children = children.concat(this.scaffold(item, obj[item]));
 					}
 				}
 
 				// If the function or object has a prototype that 
 				// 'hasOwnProperties', then create unit tests for 
 				// those properties.
-				for (item in module.prototype) {
-					if (module.prototype.hasOwnProperty(item)) {
-						protoChildren = protoChildren.concat(this.scaffold(item, module[item]));
+				for (item in obj.prototype) {
+					if (obj.prototype.hasOwnProperty(item)) {
+						protoChildren = protoChildren.concat(this.scaffold(item, obj[item]));
 					}
 				}
 				if (protoChildren.length) {
 					children.push(new test({
-						raw: '{name:' + key + '.prototype}'
+						raw: key + '.prototype',
+						variables: {
+							name: key + 'Proto'
+						}
 					}, protoChildren));
 				}
 
@@ -263,29 +274,30 @@ _.extend(inkblot.prototype, {
 				// the object passed to the `scaffold` function. 
 				// Using the `key` argument, or, if none is provided, 
 				// a unique identifier, generate some unit test.
-				obj.push(new test({
-					raw: typeof module + ' {name:' + (key || _.uniqueId(typeof module)) + '}'
+				result.push(new test({
+					raw: typeof obj + ' ' + key,
+					variables: {
+						name: (key || _.uniqueId(typeof obj))
+					}
 				}, children));
 				break;
-			// If the 'module' passed to the scaffolding function is 
+			// If the 'obj' passed to the scaffolding function is 
 			// not either an object nor a function, it means it is 
 			// another primitive data type and we simply need to 
 			// generate some test for it. Perhaps just to check if it 
 			// exists.
 			default:
-				obj.push(new test({
-					raw: '{name:' + (key || _.uniqueId(typeof module)) + '}'
+				result.push(new test({
+					raw: key,
+					variables: {
+						name: (key || _.uniqueId(typeof obj))
+					}
 				}, []));
 				break;
 		}
 
-		return obj;
+		return result;
 	},
-	
-	// Find Comments Function
-	// ----------------------
-	// Convert the comments to an array of workable commands.
-	findComments: function (module, data, callback) {
 
 	searchObject: function (needle, haystack) {
 		var result = null;
