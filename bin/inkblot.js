@@ -190,6 +190,7 @@ _.extend(inkblot.prototype, {
 						throw err;
 					}
 					process.stdout.write('Compiled: [ ' + specFile + ' ]\n');
+					done(null);
 				});
 			}
 		});
