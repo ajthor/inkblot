@@ -9,15 +9,18 @@
 var fs = require('fs');
 var path = require('path');
 
+var _ = require('underscore');
 var async = require('async');
+
+var wiring = require('./wiring.js');
 
 // Load Template Function (Memoized)
 // ---------------------------------
 // In order to avoid loading the same template time after time, I 
 // will memoize the output in order to load each template 
 // only once.
-var loadTemplate = async.memoize(function (obj, callback) {
-	var file = path.resolve(path.join('../inkblot/lib/templates', obj.template + '.js'));
+var loadTemplate = async.memoize(function (template, callback) {
+	var file = path.resolve(path.join('../inkblot/lib/templates', template + '.js'));
 
 	fs.readFile(file, 'utf8', function (err, data) {
 		if (err) {
@@ -29,8 +32,8 @@ var loadTemplate = async.memoize(function (obj, callback) {
 	});
 });
 
-// generate Function
-// -----------------
+// generate Function (async)
+// -------------------------
 // 1. Load spec file. If no file exists, return an empty string.
 exports.generate = function (file, obj, callback) {
 	async.waterfall([
@@ -59,9 +62,18 @@ exports.generate = function (file, obj, callback) {
 					callback(null, obj, '');
 				}
 			});
-		}
+		},
+
+		this.spliceTests.bind(this),
+
+		this.generateSpec.bind(this)
 
 	],
+	// applySpecTemplate Function
+	// --------------------------
+	// Takes the ouput stream of the previous function and passes it 
+	// through a standard spec template which adds chai libraries and 
+	// other required variables to file.
 	function (err, result) {
 		if (err) {
 			console.log(err);
@@ -74,77 +86,77 @@ exports.generate = function (file, obj, callback) {
 
 
 
-	// Append Tests
-	// ------------
-	// Search through the spec file if it exists and find the blocks 
-	// where the current tests are going to go. Splice them into the 
-	// blocks as necessary to avoid overwriting any custom 
-	// user-defined tests.
-	appendTests: function (obj, stream, callback) {
-		var t, block, generatedTests;
-		var index;
+// spliceTests Function
+// --------------------
+// Search through the spec file if it exists and find the blocks 
+// where the current tests are going to go. Splice them into the 
+// blocks as necessary to avoid overwriting any custom 
+// user-defined tests.
+exports.spliceTests = function (obj, stream, callback) {
+	var t, block, generatedTests;
+	var index;
 
-		console.log(obj);
+	console.log(obj);
 
-		async.eachSeries(obj, function(item) {
+	async.eachSeries(obj, function(item) {
 
-			if (index = (stream.indexOf(item.description)) !== -1) {
-				block = this.getBlock(index, stream);
+		if (index = (stream.indexOf(item.description)) !== -1) {
+			block = this.getBlock(index, stream);
 
 
-			}
-			else {
-				// Just append.
-			}
+		}
+		else {
+			// Just append.
+		}
 
-		}.bind(this),
-		function(err) {
+	}.bind(this),
+	function(err) {
+		if (err) {
+			console.log(err);
+		}
+
+		callback(null, stream);
+	});
+},
+
+// generateSpec Function
+// ---------------------
+// Generates the actual text which will go inside the spec file. 
+// It loads the templates from file and populates them with 
+// values from each item in the object passed to it.
+exports.generateSpec = function (obj, callback) {
+	var stream = '';
+
+	async.eachSeries(obj, function (item, next) {
+		var t;
+		var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+
+		// Read the template and parse the object into the 
+		// template to create a test.
+		fs.readFile(file, 'utf8', function (err, data) {
 			if (err) {
 				console.log(err);
 			}
 
-			callback(null, stream);
-		});
-	},
+			// If the node has children, meaning there are some 
+			// items which should go inside this one, then 
+			// recursively call generate on the object.
+			item.children = this.generate(item.children);
 
-	// Generate
-	// --------
-	// Generates the actual text which will go inside the spec file. 
-	// It loads the templates from file and populates them with 
-	// values from each item in the object passed to it.
-	generate: function (obj) {
-		var stream = '';
+			t = _.template(data, item);
+			stream += t;
 
-		async.eachSeries(obj, function (item, next) {
-			var t;
-			var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+			next(null);
 
-			// Read the template and parse the object into the 
-			// template to create a test.
-			fs.readFile(file, 'utf8', function (err, data) {
-				if (err) {
-					console.log(err);
-				}
+		}.bind(this));
 
-				// If the node has children, meaning there are some 
-				// items which should go inside this one, then 
-				// recursively call generate on the object.
-				item.children = this.generate(item.children);
-
-				t = _.template(data, item);
-				stream += t;
-
-				next(null);
-
-			}.bind(this));
-
-		}.bind(this), 
-		function (err) {
-			if (err) {
-				console.log(err);
-			}
-			callback(null, stream);
-		});
-	}
+	}.bind(this), 
+	function (err) {
+		if (err) {
+			console.log(err);
+		}
+		callback(null, stream);
+	});
+};
 
 

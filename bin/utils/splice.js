@@ -32,7 +32,7 @@ exports.splice = function (file, obj, callback) {
 
 		result = spliceObject(data, obj);
 
-		callback(null, result);
+		callback(null, file, result);
 	}.bind(this));
 };
 

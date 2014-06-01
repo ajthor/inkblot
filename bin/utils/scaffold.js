@@ -23,7 +23,7 @@ exports.scaffold = function (file, callback) {
 		// loadModule Function
 		// -------------------
 		// Tries to load the module specified by the `file` variable. 
-		// If it loads, it calls `makeTests` to generate a 
+		// If it loads, it calls `generateScaffolding` to generate a 
 		// scaffolding object. If it can't load the module, meaning 
 		// Node doesn't recognize it, then it returns an emty array.
 		function loadModule(callback) {
@@ -32,7 +32,7 @@ exports.scaffold = function (file, callback) {
 
 			try {
 				module = require(file);
-				obj = this.makeTests(base, module);
+				obj = generateScaffolding(base, module);
 			}
 			catch(e) {
 				console.warn('WARN: cannot scaffold module [ %s ]', file);
@@ -51,17 +51,17 @@ exports.scaffold = function (file, callback) {
 			console.log(err);
 		}
 
-		callback(null, result);
+		callback(null, file, result);
 	})
 };
 
-// makeTests Function
-// ------------------
+// generateScaffolding Function
+// ----------------------------
 // Using the output of a module, the `scaffold` function 
 // traverses the object and generates a suite of unit tests to 
 // cover the module. If the objects have prototypes, it will 
 // create tests to cover the prototypes as well.
-exports.makeTests = function (key, obj) {
+var generateScaffolding = function (key, obj) {
 	var result = [];
 	var children = [];
 	var protoChildren = [];
@@ -89,7 +89,7 @@ exports.makeTests = function (key, obj) {
 		// for them.
 		for (item in obj) {
 			if (obj.hasOwnProperty(item)) {
-				children = children.concat(this.makeTests(item, obj[item]));
+				children = children.concat(generateScaffolding(item, obj[item]));
 			}
 		}
 
@@ -98,7 +98,7 @@ exports.makeTests = function (key, obj) {
 		// those properties.
 		for (item in obj.prototype) {
 			if (obj.prototype.hasOwnProperty(item)) {
-				protoChildren = protoChildren.concat(this.makeTests(item, obj[item]));
+				protoChildren = protoChildren.concat(generateScaffolding(item, obj[item]));
 			}
 		}
 		if (protoChildren.length) {
