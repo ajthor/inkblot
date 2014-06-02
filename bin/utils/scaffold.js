@@ -76,14 +76,6 @@ var generateScaffolding = function (key, obj) {
 	switch (typeof obj) {
 	case 'object':
 	case 'function':
-
-		children.push(new test({
-			template: 'beforeEach',
-			variables: {
-				name: key
-			}
-		}));
-
 		// If there are any static functions or properties on 
 		// this object or function, then create unit tests 
 		// for them.
