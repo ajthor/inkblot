@@ -13,11 +13,6 @@ var fs = require('fs');
 var test = require('./test.js');
 var wiring = require('./wiring.js');
 
-// Regular Expressions
-// -------------------
-var rxDescribe = /\s*\/\/ (describe (.+))\n/g;
-var rxIt =       /it\\((?:\'|")(.*)(?:\'|")/g;
-
 // splice Function (async)
 // -----------------------
 // Accepts a file name and an object to splice the file into and 
@@ -26,11 +21,11 @@ exports.splice = function (file, obj, callback) {
 	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 		var result;
 
-		if (data.indexOf(this.options.searchString) === -1) {
+		if (data.indexOf(this.options.comment + ' describe') === -1) {
 			callback(new Error('No inkblot comments in file: ' + file), data);
 		}
 
-		result = spliceObject(data, obj);
+		result = spliceObject.call(this, data, obj);
 
 		callback(null, file, result);
 	}.bind(this));
@@ -73,6 +68,12 @@ var spliceObject = function (data, obj) {
 	var blockMatch;
 
 	var child;
+
+	// Regular Expressions
+	// -------------------
+	var rxDescribe = new RegExp('\s*' + this.options.comment + ' (describe (.+))\n', 'g');
+	var rxIt       = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
+	var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
 
 	while ((match = rxDescribe.exec(data)) !== null) {
 		// If the describe block already exists in the spec file, 

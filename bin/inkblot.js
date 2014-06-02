@@ -36,7 +36,7 @@ var inkblot = module.exports = function (options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
-		searchString: '// describe',
+		comment: '//',
 		out: './test'
 
 	}, this.options);
@@ -126,7 +126,7 @@ _.extend(inkblot.prototype, {
 					done(null);
 				});
 			}
-		});
+		}.bind(this));
 	}
 
 });
