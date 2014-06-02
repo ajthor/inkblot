@@ -20,11 +20,15 @@ var async = require('async');
 var beautify = require('js-beautify').js_beautify;
 var test = require('./utils/test.js');
 
-// 'It' Function
-// -------------
-// Global variable definition to accomodate wayward 'it' function 
-// errors in syntax.
+// Global Functions
+// ----------------
+// Global variable definitions to accomodate wayward function errors 
+// in syntax.
+global.describe = function () {};
+
 global.it = function () {};
+
+global.beforeEach = function () {};
 
 
 
