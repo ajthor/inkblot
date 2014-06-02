@@ -87,10 +87,21 @@ var spliceObject = function (data, obj) {
 		// If nothing is found, we can assume that the test is 
 		// something new that we aren't expecting to be tested.
 		if (!ref) {
-			obj.push(new test({
-				raw: match[1],
-				code: block
-			}));
+			ref = new test({
+				raw: match[1]
+			});
+
+			while ((blockMatch = rxIt.exec(block)) !== null) {
+				itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
+
+				ref.children.push(new test({
+					template: 'it',
+					raw: blockMatch[1],
+					code: itBlock
+				}));
+			}
+
+			obj.push(ref);
 		}
 		// Otherwise, it has been found. In this case, just 
 		// append the 'it' blocks to the 'describe' block if they 
@@ -98,7 +109,7 @@ var spliceObject = function (data, obj) {
 		else {
 
 			while ((blockMatch = rxIt.exec(block)) !== null) {
-				itBlock = wiring.getBlock(blockMatch.index, blockMatch.input);
+				itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
 
 				target = null;
 
