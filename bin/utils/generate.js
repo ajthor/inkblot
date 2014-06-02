@@ -62,11 +62,9 @@ exports.generate = function (file, obj, callback) {
 					callback(null, obj, '');
 				}
 			});
-		},
+		}.bind(this),
 
-		this.spliceTests.bind(this),
-
-		this.generateSpec.bind(this)
+		this.spliceTests.bind(this)
 
 	],
 	// applySpecTemplate Function
@@ -93,20 +91,54 @@ exports.generate = function (file, obj, callback) {
 // blocks as necessary to avoid overwriting any custom 
 // user-defined tests.
 exports.spliceTests = function (obj, stream, callback) {
-	var t, block, generatedTests;
+	var t, generatedTests, block = '';
 	var index;
 
-	console.log(obj);
+	async.eachSeries(obj, function (item, next) {
+		// If the block exists, we need to cycle through the children
+		// of this object and see if they have corresponding tests
+		// inside this block. If they do, we may need to overwrite
+		// those tests. Prompt for overwrite.
+		if ((index = stream.indexOf(item.description)) !== -1) {
+			block = wiring.getBlock(index, stream);
 
-	async.eachSeries(obj, function(item) {
+			async.waterfall([
+				function (callback) {
+					callback(null, item.children, block);
+				},
 
-		if (index = (stream.indexOf(item.description)) !== -1) {
-			block = this.getBlock(index, stream);
+				this.spliceTests.bind(this)
 
+			],
+			function (err, result) {
+				if (err) {
+					console.log(err);
+				}
+
+				stream = stream.replace(block, result);
+
+				next(null);
+			});
 
 		}
+		// If the block wasn't found, then it's safe to assume that 
+		// this particular test doesn't exist yet. In which case, we 
+		// can append this test to the end of the block.
 		else {
-			// Just append.
+			async.waterfall([
+				function (callback) {
+					callback(null, [item]);
+				},
+
+				generateSpec
+			],
+			function (err, result) {
+				if (err) {
+					console.log(err);
+				}
+				stream += result;
+				next(null);
+			})
 		}
 
 	}.bind(this),
@@ -117,46 +149,65 @@ exports.spliceTests = function (obj, stream, callback) {
 
 		callback(null, stream);
 	});
-},
+};
 
 // generateSpec Function
 // ---------------------
 // Generates the actual text which will go inside the spec file. 
 // It loads the templates from file and populates them with 
 // values from each item in the object passed to it.
-exports.generateSpec = function (obj, callback) {
+var generateSpec = function (obj, callback) {
 	var stream = '';
 
-	async.eachSeries(obj, function (item, next) {
-		var t;
-		var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+	if (!Array.isArray(obj)) {
+		callback(null, '');
+	}
+	else {
+		async.eachSeries(obj, function (item, next) {
+			var t;
+			var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
 
-		// Read the template and parse the object into the 
-		// template to create a test.
-		fs.readFile(file, 'utf8', function (err, data) {
+			// Read the template and parse the object into the 
+			// template to create a test.
+			fs.readFile(file, 'utf8', function (err, data) {
+				if (err) {
+					console.log(err);
+				}
+
+				// If the node has children, meaning there are some 
+				// items which should go inside this one, then 
+				// recursively call generate on the object.
+				async.waterfall([
+					function (callback) {
+						callback(null, item.children);
+					},
+
+					generateSpec
+				], 
+				function (err, result) {
+					if (err) {
+						console.log(err);
+					}
+
+					item.children = result;
+
+					t = _.template(data, item);
+
+					stream += t;
+
+					next(null);
+				});
+
+			});
+
+		}, 
+		function (err) {
 			if (err) {
 				console.log(err);
 			}
-
-			// If the node has children, meaning there are some 
-			// items which should go inside this one, then 
-			// recursively call generate on the object.
-			item.children = this.generate(item.children);
-
-			t = _.template(data, item);
-			stream += t;
-
-			next(null);
-
-		}.bind(this));
-
-	}.bind(this), 
-	function (err) {
-		if (err) {
-			console.log(err);
-		}
-		callback(null, stream);
-	});
+			callback(null, stream);
+		});
+	}
 };
 
 

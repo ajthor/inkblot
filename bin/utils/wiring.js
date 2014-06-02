@@ -29,4 +29,14 @@ exports.getBlock = function (index, block) {
 	}
 };
 
-
+// appendToBlock Function
+// ----------------------
+// Appends code to the end of a block.
+exports.appendToBlock = function (text, block) {
+	console.log(block);
+	var index;
+	if ((index = block.lastIndexOf('}')) === -1) {
+		index = block.length;
+	}
+	return block.substr(0, index) + text + block.substr(index);
+};
