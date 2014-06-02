@@ -12,6 +12,8 @@ var path = require('path');
 var _ = require('underscore');
 var async = require('async');
 
+var inquirer = require('inquirer');
+
 var wiring = require('./wiring.js');
 
 // Load Template Function (Memoized)
@@ -64,6 +66,10 @@ exports.generate = function (file, obj, callback) {
 			});
 		}.bind(this),
 
+		// Splice Tests
+		// ------------
+		// After loading the spec file, splice the tests 
+		// into the spec.
 		this.spliceTests.bind(this)
 
 	],
@@ -95,32 +101,111 @@ exports.spliceTests = function (obj, stream, callback) {
 	var index;
 
 	async.eachSeries(obj, function (item, next) {
+
+		index = item.description ? stream.indexOf(item.description) : stream.indexOf(item.template);
+		
 		// If the block exists, we need to cycle through the children
 		// of this object and see if they have corresponding tests
 		// inside this block. If they do, we may need to overwrite
 		// those tests. Prompt for overwrite.
-		index = item.description ? stream.indexOf(item.description) : stream.indexOf(item.template);
-
 		if (index !== -1) {
-			block = wiring.getBlock(index, stream);
+			block = wiring.getInnerBlock(index, stream);
 
-			async.waterfall([
-				function (callback) {
-					callback(null, item.children, block);
-				},
+			if (item.children.length) {
+				async.waterfall([
+					function (callback) {
+						callback(null, item.children, block);
+					},
 
-				this.spliceTests.bind(this)
+					this.spliceTests.bind(this)
 
-			],
-			function (err, result) {
-				if (err) {
-					console.log(err);
+				],
+				function (err, result) {
+					if (err) {
+						console.log(err);
+					}
+
+					stream = stream.replace(block, result);
+
+					next(null);
+				});
+			}
+			// If the test doesn't have any children, it means this 
+			// test is at the end of a branch, and we can just 
+			// compare the code that is inside of this test to see if 
+			// it matches the code in the spec file. If the two are 
+			// different, we need to check for conflicts.
+			else {
+
+				if (item.code.trim() !== block.trim()) {
+					// inquirer.prompt([
+					// 	{
+					// 		type: 'expand',
+					// 		name: 'choice',
+					// 		message: (function () {
+					// 			return 'The code: \n\n' + item.code.trim() + '\n\nDoes not match the code in the spec file: \n\n' + block.trim() + '\n\nReplace anyway?';
+					// 		})(),
+					// 		choices: [
+					// 			{
+					// 				key: 'y',
+					// 				name: 'Overwrite',
+					// 				value: 'overwrite'
+					// 			},
+					// 			{
+					// 				key: 'a',
+					// 				name: 'Overwrite all',
+					// 				value: 'overwriteAll'
+					// 			},
+					// 			{
+					// 				key: 'd',
+					// 				name: 'Show diff',
+					// 				value: 'diff'
+					// 			},
+					// 			{
+					// 				key: 'n',
+					// 				name: 'Don\'t overwrite',
+					// 				value: 'noOverwrite'
+					// 			},
+					// 			{
+					// 				key: 'x',
+					// 				name: 'Abort',
+					// 				value: 'abort'
+					// 			}
+					// 		]
+					// 	}
+					// ], function (answers) {
+					// 	console.log(answers);
+					// 	next(null);
+					// });
+
+					async.waterfall([
+						function (callback) {
+							callback(null, [item]);
+						},
+
+						generateSpec
+					],
+					function (err, result) {
+						if (err) {
+							console.log(err);
+						}
+
+						// We don't replace 'describe' blocks.
+						if (item.template !== 'describe') {
+							console.log('Replacing unit test:', item.description);
+							
+							stream = stream.replace(block, result);
+						}
+
+						next(null);
+					});
+
+				}
+				else {
+					next(null);
 				}
 
-				stream = stream.replace(block, result);
-
-				next(null);
-			});
+			}
 
 		}
 		// If the block wasn't found, then it's safe to assume that 
