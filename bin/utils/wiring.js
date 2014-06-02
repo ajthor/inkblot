@@ -5,13 +5,14 @@
 
 'use strict';
 
-// getBlock Function
-// -----------------
-// Retrieves the block of code defined 
-exports.getBlock = function (index, block) {
-	var end, start = block.indexOf('{', index) + 1;
+// findMatchingBrace Function
+// --------------------------
+// Exactly what it says. Starts at some brace which is designated 
+// count 1. When the count reaches zero, it returns the current 
+// index. If you start the function inside of some brace, it will 
+// find the matching brace for it.
+var findMatchingBrace = function (start, block) {
 	var blockCount = 1;
-
 	var i;
 
 	for (i = start; i < block.length; i++) {
@@ -21,12 +22,43 @@ exports.getBlock = function (index, block) {
 		else if (block[i] === '}') {
 			blockCount--;
 			if(blockCount === 0) {
-				// end = block.indexOf('\n', i);
-				end = i;
-				return block.slice(start, end).trim();
+				return i;
 			}
 		}
 	}
+
+	return -1;
+};
+
+// getInnerBlock Function
+// ----------------------
+// Retrieves the block of code defined inside the block.
+exports.getInnerBlock = function (index, block) {
+	var end, start = block.indexOf('{', index) + 1;
+
+	end = findMatchingBrace(start, block);
+
+	return block.slice(start, end).trim();
+};
+
+// getOuterBlock Function
+// ----------------------
+// Retreives the whole block, including the wrapper function.
+exports.getOuterBlock = function (index, block) {
+	var end, start;
+	var blockCount = 0;
+
+	var i;
+
+	for (i = index; !start || i--; ) {
+		if (block[i] === '\n') {
+			start = i;
+		}
+	}
+
+	end = findMatchingBrace(block.indexOf('{', start), block);
+
+	return block.slice(start, end).trim();
 };
 
 // appendToBlock Function
