@@ -21,7 +21,7 @@ exports.splice = function (file, obj, callback) {
 	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 		var result;
 
-		if (data.indexOf(this.options.comment + ' describe') === -1) {
+		if (data.indexOf('// describe') === -1) {
 			callback(new Error('No inkblot comments in file: ' + file), data);
 		}
 
@@ -71,7 +71,7 @@ var spliceObject = function (data, obj) {
 
 	// Regular Expressions
 	// -------------------
-	var rxDescribe = new RegExp('\s*' + this.options.comment + ' (describe (.+))\n', 'g');
+	var rxDescribe = new RegExp('\s*// (describe (.+))\n', 'g');
 	var rxIt       = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
 	var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
 
