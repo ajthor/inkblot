@@ -99,7 +99,9 @@ exports.spliceTests = function (obj, stream, callback) {
 		// of this object and see if they have corresponding tests
 		// inside this block. If they do, we may need to overwrite
 		// those tests. Prompt for overwrite.
-		if ((index = stream.indexOf(item.description)) !== -1) {
+		index = item.description ? stream.indexOf(item.description) : stream.indexOf(item.template);
+
+		if (index !== -1) {
 			block = wiring.getBlock(index, stream);
 
 			async.waterfall([
@@ -136,7 +138,7 @@ exports.spliceTests = function (obj, stream, callback) {
 				if (err) {
 					console.log(err);
 				}
-				stream += result;
+				stream += '\n\n' + result.trim();
 				next(null);
 			})
 		}

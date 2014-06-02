@@ -10,7 +10,7 @@ var rxCurly = /\{([^}]+)\}/g;
 var test = module.exports = function (options, children) {
 	_.defaults(this, options, {
 		template: 'describe',
-		raw: 'helloWorld',
+		raw: '',
 		code: ''
 	});
 
