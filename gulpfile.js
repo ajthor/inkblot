@@ -30,8 +30,7 @@ gulp.task('docs-commit', ['docs-make'], shell.task([
 	'git checkout gh-pages',
 	'git add ./docs',
 	'git commit -a -m \"update docs\"',
-	'git checkout master',
-	'git checkout -b development'
+	'git checkout development'
 ]));
 
 gulp.task('docs', ['docs-commit'], function() {
