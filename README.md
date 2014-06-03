@@ -16,6 +16,7 @@ Then, install inkblot using NPM:
 
     npm install -g inkblot
 
+
 ------
 
 ## Usage
@@ -31,6 +32,7 @@ The output directory can be changed by passing an option to the CLI.
     inkblot **/*.js --out="somedir"
 
 *I plan on extending this behavior in the near future with commander or minimist.*
+
 
 ------
 
@@ -53,34 +55,40 @@ The unit test code between the describe and end comments is parsed by the progra
 
 Sample:
 
-`somefile.js`
+File: `somefile.js`
 ```javascript
-// describe exports.hello
+// describe somefile
     it('should return a string', function() {
-        expect(hello()).to.be.a('string');
+        expect(somefile()).to.be.a('string');
     });
 // end
 
 var hello = module.exports = function hello(name) {
-	return "Hello, " + name;
+    return "Hello, " + name;
 };
 ```
 Will output:
 
-`somefile.spec.js`
+File: `test/somefile.spec.js`
 ```javascript
-var hello = require('somefile.js');
+var chai = require('chai'),
+    expect = chai.expect,
+    assert = chai.assert,
+    should = chai.should();
 
-describe('function hello', function() {
+var somefile = require('somefile.js');
 
-    var hello;
+describe('somefile', function() {
+
+    var name1;
 
     it('should return a string', function() {
-        expect(hello()).to.be.a('string');
+        expect(somefile()).to.be.a('string');
     });
 
 });
 ```
+
 
 ------
 
