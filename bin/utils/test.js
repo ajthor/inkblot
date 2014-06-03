@@ -7,12 +7,16 @@ var rxCurly = /\{([^}]+)\}/g;
 
 // Test Object
 // ===========
-var test = exports.test = function (options, children) {
+var test = module.exports = function (options, children) {
 	_.defaults(this, options, {
 		template: 'describe',
-		raw: 'helloWorld',
+		raw: '',
 		code: ''
 	});
+
+	if ((typeof children === 'undefined') || (children === null)) {
+		children = [];
+	}
 
 	this.initialize.call(this, children);
 };
@@ -34,7 +38,7 @@ _.extend(test.prototype, {
 			return desc;
 		}.bind(this))();
 
-		this.children = children || [];
+		this.children = children;
 
 	},
 	// Functions
