@@ -51,9 +51,9 @@ exports.generate = function (file, obj, callback) {
 			base = path.basename(file, ext);
 			specFile = path.join(this.options.out, base + '.spec' + ext);
 
-			fs.exists(specFile, function(exists) {
-				if(exists) {
-					fs.readFile(specFile, 'utf8', function(err, data) {
+			fs.exists(specFile, function (exists) {
+				if (exists) {
+					fs.readFile(specFile, 'utf8', function (err, data) {
 						if (err) {
 							console.log(err);
 						}
@@ -116,7 +116,7 @@ var diffBlocks = function (block1, block2) {
 // blocks as necessary to avoid overwriting any custom 
 // user-defined tests.
 exports.spliceTests = function (obj, stream, callback) {
-	var t, generatedTests, block = '';
+	var block = '';
 	var index;
 
 	async.eachSeries(obj, function (item, next) {
@@ -155,74 +155,42 @@ exports.spliceTests = function (obj, stream, callback) {
 			// it matches the code in the spec file. If the two are 
 			// different, we need to check for conflicts.
 			else {
+				async.waterfall([
+					function (callback) {
+						callback(null, [item]);
+					},
 
-				if (item.code.trim() !== block.trim()) {
-					// inquirer.prompt([
-					// 	{
-					// 		type: 'expand',
-					// 		name: 'choice',
-					// 		message: (function () {
-					// 			return 'The code: \n\n' + item.code.trim() + '\n\nDoes not match the code in the spec file: \n\n' + block.trim() + '\n\nReplace anyway?';
-					// 		})(),
-					// 		choices: [
-					// 			{
-					// 				key: 'y',
-					// 				name: 'Overwrite',
-					// 				value: 'overwrite'
-					// 			},
-					// 			{
-					// 				key: 'a',
-					// 				name: 'Overwrite all',
-					// 				value: 'overwriteAll'
-					// 			},
-					// 			{
-					// 				key: 'd',
-					// 				name: 'Show diff',
-					// 				value: 'diff'
-					// 			},
-					// 			{
-					// 				key: 'n',
-					// 				name: 'Don\'t overwrite',
-					// 				value: 'noOverwrite'
-					// 			},
-					// 			{
-					// 				key: 'x',
-					// 				name: 'Abort',
-					// 				value: 'abort'
-					// 			}
-					// 		]
-					// 	}
-					// ], function (answers) {
-					// 	console.log(answers);
-					// 	next(null);
-					// });
+					generateSpec
+				],
+				function (err, result) {
+					if (err) {
+						console.log(err);
+					}
 
-					async.waterfall([
-						function (callback) {
-							callback(null, [item]);
-						},
+					block = wiring.getOuterBlock(index, stream);
 
-						generateSpec
-					],
-					function (err, result) {
-						if (err) {
-							console.log(err);
-						}
+					if (diffBlocks(block, result)) {
 
-						// We don't replace 'describe' blocks.
-						if (item.template !== 'describe') {
-							console.log('Replacing unit test:', item.description);
-							
-							stream = stream.replace(block, result);
-						}
+						inquirer.prompt([{
+							type: 'confirm',
+							name: 'replace',
+							message: 'TEST: \'' + item.description + '\' has changed. Replace it?',
+							default: true
+						}], function (answer) {
 
+							if (answer.replace) {
+								stream = stream.replace(block, result.trim());
+							}
+
+							next(null);
+						});
+
+					}
+					else {
 						next(null);
-					});
+					}
+				});
 
-				}
-				else {
-					next(null);
-				}
 
 			}
 
@@ -244,11 +212,11 @@ exports.spliceTests = function (obj, stream, callback) {
 				}
 				stream += '\n\n' + result.trim();
 				next(null);
-			})
+			});
 		}
 
 	}.bind(this),
-	function(err) {
+	function (err) {
 		if (err) {
 			console.log(err);
 		}
@@ -295,6 +263,7 @@ var generateSpec = function (obj, callback) {
 						console.log(err);
 					}
 
+					item.code = _.template(item.code, item);
 					item.children = result;
 
 					t = _.template(data, item);
