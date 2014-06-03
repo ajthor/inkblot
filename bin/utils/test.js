@@ -14,6 +14,10 @@ var test = module.exports = function (options, children) {
 		code: ''
 	});
 
+	if ((typeof children === 'undefined') || (children === null)) {
+		children = [];
+	}
+
 	this.initialize.call(this, children);
 };
 
@@ -34,7 +38,7 @@ _.extend(test.prototype, {
 			return desc;
 		}.bind(this))();
 
-		this.children = children || [];
+		this.children = children;
 
 	},
 	// Functions

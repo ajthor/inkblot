@@ -76,6 +76,15 @@ var generateScaffolding = function (key, obj) {
 	switch (typeof obj) {
 	case 'object':
 	case 'function':
+
+		children.push(new test({
+			template: 'it',
+			raw: 'should exist',
+			code: 'expect(<%= variable(\'name\') %>).to.exist;',
+			variables: {
+				name: (key || _.uniqueId(typeof obj))
+			}
+		}));
 		// If there are any static functions or properties on 
 		// this object or function, then create unit tests 
 		// for them.
@@ -126,7 +135,15 @@ var generateScaffolding = function (key, obj) {
 			variables: {
 				name: (key || _.uniqueId(typeof obj))
 			}
-		}, []));
+		}, [new test({
+				template: 'it',
+				raw: 'should exist',
+				code: 'expect(<%= variable(\'name\') %>).to.exist;',
+				variables: {
+					name: (key || _.uniqueId(typeof obj))
+				}
+			})]
+		));
 		break;
 	}
 
