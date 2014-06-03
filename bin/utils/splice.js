@@ -10,6 +10,8 @@
 
 var fs = require('fs');
 
+var path = require('path');
+
 var test = require('./test.js');
 var wiring = require('./wiring.js');
 
@@ -27,8 +29,29 @@ exports.splice = function (file, obj, callback) {
 
 		result = spliceObject.call(this, data, obj);
 
+		this.writeJSON(file, result);
+
 		callback(null, file, result);
 	}.bind(this));
+};
+
+// writeJSON Function
+// ------------------
+// Mostly a developer function to output the entire object created by 
+// inkblot from scaffolding the object and parsing the comments.
+exports.writeJSON = function (fileName, obj) {
+	var ext = path.extname(fileName);
+	var base = path.basename(fileName, ext);
+	var filePath = path.join('./test/', base + '.json');
+
+	fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+		if (err) {
+			console.log(err);
+		}
+		else {
+			console.log('Create: [ ' + filePath + ' ]');
+		}
+	});
 };
 
 // searchObject Function
@@ -88,7 +111,7 @@ var spliceObject = function (data, obj) {
 		// something new that we aren't expecting to be tested.
 		if (!ref) {
 			ref = new test({
-				raw: match[1]
+				raw: match[2]
 			});
 
 			while ((blockMatch = rxIt.exec(block)) !== null) {
