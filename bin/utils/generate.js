@@ -88,6 +88,25 @@ exports.generate = function (file, obj, callback) {
 
 };
 
+// trimWhitespace Function
+// -----------------------
+// Helper function for diffBlocks function.
+var trimWhitespace = function (block) {
+	block = block.replace(/\n/g, '');
+	block = block.replace(/\t/g, '');
+	block = block.replace(/\s/g, '');
+
+	return block;
+};
+
+// diffBlocks Function
+// -------------------
+// Helper function to diff code blocks.
+var diffBlocks = function (block1, block2) {
+	block1 = trimWhitespace(block1);
+	block2 = trimWhitespace(block2);
+	return ~~(block1 !== block2);
+};
 
 
 // spliceTests Function
