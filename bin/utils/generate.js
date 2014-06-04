@@ -38,6 +38,7 @@ var loadTemplate = async.memoize(function (template, callback) {
 // -------------------------
 // 1. Load spec file. If no file exists, return an empty string.
 exports.generate = function (file, obj, callback) {
+	console.log('..generating');
 	async.waterfall([
 
 		// loadSpecFile

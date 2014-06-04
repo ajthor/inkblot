@@ -64,7 +64,7 @@ _.extend(inkblot.prototype, {
 			if (err) {
 				throw err;
 			}
-			console.log('Task completed.');
+			console.log('Done.');
 		});
 	},
 
@@ -90,7 +90,7 @@ _.extend(inkblot.prototype, {
 
 				fs.exists(file, function (exists) {
 					if (!exists) {
-						callback(new Error('File does not exist.'));
+						callback(new Error('File does not exist.'), null);
 					}
 
 					callback(null, file);
@@ -149,7 +149,7 @@ _.extend(inkblot.prototype, {
 					if (err) {
 						throw err;
 					}
-					process.stdout.write('Compiled: [ ' + specFile + ' ]\n');
+					process.stdout.write('compiled: [ ' + specFile + ' ]\n');
 					done(null);
 				});
 			}

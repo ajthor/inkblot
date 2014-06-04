@@ -22,8 +22,11 @@ var wiring = require('./wiring.js');
 exports.splice = function (file, obj, callback) {
 	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 		var result;
+		if (err) {
+			callback(new Error('File does not exist.'), null);
+		}
 
-		if (data.indexOf('// describe') === -1) {
+		if (data && (data.indexOf('// describe') === -1)) {
 			callback(new Error('No inkblot comments in file: ' + file), data);
 		}
 

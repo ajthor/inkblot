@@ -14,7 +14,9 @@ var test = require('./test.js');
 
 // Scaffold Function (async)
 // -------------------------
-exports.scaffold = function (file, callback) {		
+exports.scaffold = function (file, callback) {
+	console.log('..scaffolding');
+	
 	var ext = path.extname(file);
 	var base = path.basename(file, ext);
 
@@ -37,7 +39,7 @@ exports.scaffold = function (file, callback) {
 			catch(e) {
 				console.warn('WARN: cannot scaffold module [ %s ]', file);
 				if (e) {
-					console.error('Error: ', e.stack);
+					console.error('Error: ', e);
 				}
 			}
 			finally {
