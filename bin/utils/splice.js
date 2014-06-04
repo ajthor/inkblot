@@ -33,18 +33,16 @@ exports.splice = function (file, obj, callback) {
 				}
 
 				if (data && (data.indexOf('// describe') === -1)) {
-					callback(new Error('No inkblot comments in file: ' + file), data);
+					callback(new Error('No inkblot comments in file: ' + file), obj);
 				}
 
-				// result = spliceObject.call(this, file, data, obj);
-
-				// this.writeJSON(file, result);
-
 				callback(null, file, data, obj);
-			}.bind(this));
+			});
 		},
 
 		spliceObject,
+
+		// writeJSON,
 
 		writeOriginal
 
@@ -53,74 +51,11 @@ exports.splice = function (file, obj, callback) {
 		if (err) {
 			console.log(err);
 		}
-
-		// async.series([
-		// 	function (callback) {
-		// 		callback(null, file, result);
-		// 	},
-
-		// 	writeJSON
-		// ],
-		// function (err) {
-		// 	if (err) {
-		// 		console.log(err);
-		// 	}
 			
-			callback(null, file, result);
-		// });
-
+		callback(null, file, result);
 	});
 
 	
-};
-
-// writeJSON Function
-// ------------------
-// Mostly a developer function to output the entire object created by 
-// inkblot from scaffolding the object and parsing the comments.
-var writeJSON = function (file, obj, callback) {
-	var ext = path.extname(file);
-	var base = path.basename(file, ext);
-	var filePath = path.join('./test/', base + '.json');
-
-	fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
-		if (err) {
-			console.log(err);
-		}
-		else {
-			console.log('create:   [ ' + filePath + ' ]');
-		}
-
-		callback(null, obj);
-	});
-};
-
-// writeOriginal Function
-// ---------------------
-// Saves the cleaned file back to the original location.
-var writeOriginal = function (file, data, obj, callback) {
-	inquirer.prompt({
-		type: 'confirm',
-		name: 'overwrite',
-		message: 'Do you want to remove tests from ' + file + '?',
-		default: false
-	}, function (answers) {
-		if (answers.overwrite === true) {
-			fs.writeFile(file, data, function (err) {
-				if (err) {
-					console.log(err);
-				}
-				else {
-					console.log('clean:    [ ' + file + ' ]');
-				}
-
-				callback(null, obj);
-			});
-		}
-		else {
-			callback(null, obj);
-		}
-	}.bind(this));
 };
 
 // searchObject Function
@@ -245,6 +180,69 @@ var spliceObject = function (file, data, obj, callback) {
 			callback(null, file, data, obj);
 		}
 	);
+};
+
+// writeJSON Function
+// ------------------
+// Mostly a developer function to output the entire object created by 
+// inkblot from scaffolding the object and parsing the comments.
+var writeJSON = function (file, data, obj, callback) {
+	var ext = path.extname(file);
+	var base = path.basename(file, ext);
+	var filePath = path.join('./test/', base + '.json');
+
+	inquirer.prompt({
+		type: 'confirm',
+		name: 'overwrite',
+		message: 'Do you want to create JSON file ' + filePath + '?',
+		default: false
+	}, function (answers) {
+		if (answers.overwrite === true) {
+			fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+				if (err) {
+					console.log(err);
+				}
+				else {
+					console.log('create:   [ ' + filePath + ' ]');
+				}
+
+				callback(null, file, data, obj);
+			});
+		}
+		else {
+			callback(null, file, data, obj);
+		}
+	}.bind(this));
+};
+
+// writeOriginal Function
+// ---------------------
+// Saves the cleaned file back to the original location.
+var writeOriginal = function (file, data, obj, callback) {
+	var base = path.basename(file);
+
+	inquirer.prompt({
+		type: 'confirm',
+		name: 'overwrite',
+		message: 'Do you want to remove inline tests from ' + base + '?',
+		default: false
+	}, function (answers) {
+		if (answers.overwrite === true) {
+			fs.writeFile(file, data, function (err) {
+				if (err) {
+					console.log(err);
+				}
+				else {
+					console.log('clean:    [ ' + base + ' ]');
+				}
+
+				callback(null, obj);
+			});
+		}
+		else {
+			callback(null, obj);
+		}
+	}.bind(this));
 };
 
 
