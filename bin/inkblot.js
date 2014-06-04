@@ -101,7 +101,30 @@ _.extend(inkblot.prototype, {
 
 			this.splice.bind(this),
 
-			this.generate.bind(this)
+			this.generate.bind(this),
+
+			// If the result is based on a new file, we will need to 
+			// include the proper headers (including chai libraries, 
+			// etc.)
+			function applySpecTemplate(stream, callback) {
+				if (stream.indexOf('require(\'chai\')') === -1) {
+					fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
+						if (err) {
+							console.log(err);
+						}
+
+						stream = _.template(data, {
+							path: file,
+							code: stream
+						});
+
+						callback(null, stream);
+					});
+				}
+				else {
+					callback(null, stream);
+				}
+			}
 
 		],
 		// Save File
