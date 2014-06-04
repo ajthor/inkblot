@@ -9,8 +9,11 @@
 'use strict';
 
 var fs = require('fs');
-
 var path = require('path');
+
+var async = require('async');
+
+var inquirer = require('inquirer');
 
 var test = require('./test.js');
 var wiring = require('./wiring.js');
@@ -22,41 +25,37 @@ var wiring = require('./wiring.js');
 exports.splice = function (file, obj, callback) {
 	console.log('..splicing');
 
-	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
-		var result;
-		if (err) {
-			callback(new Error('File does not exist.'), null);
-		}
+	async.waterfall([
+		function (callback) {
+			fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
+				if (err) {
+					callback(err, null);
+				}
 
-		if (data && (data.indexOf('// describe') === -1)) {
-			callback(new Error('No inkblot comments in file: ' + file), data);
-		}
+				if (data && (data.indexOf('// describe') === -1)) {
+					callback(new Error('No inkblot comments in file: ' + file), obj);
+				}
 
-		result = spliceObject.call(this, data, obj);
+				callback(null, file, data, obj);
+			});
+		},
 
-		this.writeJSON(file, result);
+		spliceObject,
 
-		callback(null, file, result);
-	}.bind(this));
-};
+		// writeJSON,
 
-// writeJSON Function
-// ------------------
-// Mostly a developer function to output the entire object created by 
-// inkblot from scaffolding the object and parsing the comments.
-exports.writeJSON = function (fileName, obj) {
-	var ext = path.extname(fileName);
-	var base = path.basename(fileName, ext);
-	var filePath = path.join('./test/', base + '.json');
+		writeOriginal
 
-	fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+	],
+	function (err, result) {
 		if (err) {
 			console.log(err);
 		}
-		else {
-			console.log('create:   [ ' + filePath + ' ]');
-		}
+			
+		callback(null, file, result);
 	});
+
+	
 };
 
 // searchObject Function
@@ -87,83 +86,163 @@ var searchObject = function (needle, haystack) {
 // or the empty array passed if the module could not be loaded, 
 // splice the code in the source file into unit test objects and put 
 // them into the scaffolding object where they belong.
-var spliceObject = function (data, obj) {
+var spliceObject = function (file, data, obj, callback) {
 	var match;
-	var target;
-	var ref, code;
-
-	var block, itBlock;
-	var blockMatch;
-
-	var child;
 
 	// Regular Expressions
 	// -------------------
 	var rxDescribe = new RegExp('\s*// (describe (.+))\n', 'g');
 	var rxIt       = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
-	var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
+	// var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
 
-	while ((match = rxDescribe.exec(data)) !== null) {
-		// If the describe block already exists in the spec file, 
-		// then we can assume that the user intended to add the 
-		// unit test to that block. So, add the spec to the block 
-		// as a new child test.
-		ref = searchObject(match[2], obj);
+	async.whilst(
+		function () {
+			return ~~((match = rxDescribe.exec(data)) !== null);
+		},
+		function (callback) {
+			var target;
+			var ref;
 
-		block = data.slice(match.index + match[0].length, data.indexOf('// end', match.index));
+			var block, itBlock;
+			var blockMatch;
 
-		// If nothing is found, we can assume that the test is 
-		// something new that we aren't expecting to be tested.
-		if (!ref) {
-			ref = new test({
-				raw: match[2]
-			});
+			var child;
+			// If the describe block already exists in the spec file, 
+			// then we can assume that the user intended to add the 
+			// unit test to that block. So, add the spec to the block 
+			// as a new child test.
+			ref = searchObject(match[2], obj);
 
-			while ((blockMatch = rxIt.exec(block)) !== null) {
-				itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
+			block = data.slice(match.index + match[0].length, data.indexOf('// end', match.index));
 
-				ref.children.push(new test({
-					template: 'it',
-					raw: blockMatch[1],
-					code: itBlock
-				}));
-			}
+			// If nothing is found, we can assume that the test is 
+			// something new that we aren't expecting to be tested.
+			if (!ref) {
+				ref = new test({
+					raw: match[2]
+				});
 
-			obj.push(ref);
-		}
-		// Otherwise, it has been found. In this case, just 
-		// append the 'it' blocks to the 'describe' block if they 
-		// don't exist already.
-		else {
+				while ((blockMatch = rxIt.exec(block)) !== null) {
+					itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
 
-			while ((blockMatch = rxIt.exec(block)) !== null) {
-				itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
-
-				target = null;
-
-				for (child in ref.children) {
-					if (ref.children[child].raw === blockMatch[1]) {
-						target = ref.children[child];
-					}
-				}
-
-				if (target) {
-					target.code = itBlock;
-				}
-				else {
 					ref.children.push(new test({
 						template: 'it',
 						raw: blockMatch[1],
 						code: itBlock
 					}));
 				}
+
+				obj.push(ref);
+			}
+			// Otherwise, it has been found. In this case, just 
+			// append the 'it' blocks to the 'describe' block if they 
+			// don't exist already.
+			else {
+
+				while ((blockMatch = rxIt.exec(block)) !== null) {
+					itBlock = wiring.getInnerBlock(blockMatch.index, blockMatch.input);
+
+					target = null;
+
+					for (child in ref.children) {
+						if (ref.children[child].raw === blockMatch[1]) {
+							target = ref.children[child];
+						}
+					}
+
+					if (target) {
+						target.code = itBlock;
+					}
+					else {
+						ref.children.push(new test({
+							template: 'it',
+							raw: blockMatch[1],
+							code: itBlock
+						}));
+					}
+				}
+
 			}
 
+			// Remove the block once the tests have been pulled out of it
+			block = data.slice(match.index, data.indexOf('// end', match.index) + 7);
+			data = data.replace(block, '');
+
+			callback(null);
+
+		},
+
+		function (err) {
+			if (err) {
+				console.log(err);
+			}
+
+			callback(null, file, data, obj);
 		}
+	);
+};
 
-	}
+// writeJSON Function
+// ------------------
+// Mostly a developer function to output the entire object created by 
+// inkblot from scaffolding the object and parsing the comments.
+var writeJSON = function (file, data, obj, callback) {
+	var ext = path.extname(file);
+	var base = path.basename(file, ext);
+	var filePath = path.join('./test/', base + '.json');
 
-	return obj;
+	inquirer.prompt({
+		type: 'confirm',
+		name: 'overwrite',
+		message: 'Do you want to create JSON file ' + filePath + '?',
+		default: false
+	}, function (answers) {
+		if (answers.overwrite === true) {
+			fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+				if (err) {
+					console.log(err);
+				}
+				else {
+					console.log('create:   [ ' + filePath + ' ]');
+				}
+
+				callback(null, file, data, obj);
+			});
+		}
+		else {
+			callback(null, file, data, obj);
+		}
+	}.bind(this));
+};
+
+// writeOriginal Function
+// ---------------------
+// Saves the cleaned file back to the original location.
+var writeOriginal = function (file, data, obj, callback) {
+	var base = path.basename(file);
+
+	inquirer.prompt({
+		type: 'confirm',
+		name: 'overwrite',
+		message: 'Do you want to remove inline tests from ' + base + '?',
+		default: false
+	}, function (answers) {
+		if (answers.overwrite === true) {
+			fs.writeFile(file, data, function (err) {
+				if (err) {
+					console.log(err);
+				}
+				else {
+					console.log('clean:    [ ' + base + ' ]');
+				}
+
+				callback(null, obj);
+			});
+		}
+		else {
+			callback(null, obj);
+		}
+	}.bind(this));
 };
 
 
