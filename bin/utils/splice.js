@@ -20,6 +20,8 @@ var wiring = require('./wiring.js');
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
 exports.splice = function (file, obj, callback) {
+	console.log('..splicing');
+
 	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 		var result;
 		if (err) {
@@ -52,7 +54,7 @@ exports.writeJSON = function (fileName, obj) {
 			console.log(err);
 		}
 		else {
-			console.log('Create: [ ' + filePath + ' ]');
+			console.log('create:   [ ' + filePath + ' ]');
 		}
 	});
 };
