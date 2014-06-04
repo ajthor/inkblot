@@ -20,10 +20,15 @@ var wiring = require('./wiring.js');
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
 exports.splice = function (file, obj, callback) {
+	console.log('..splicing');
+
 	fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
 		var result;
+		if (err) {
+			callback(new Error('File does not exist.'), null);
+		}
 
-		if (data.indexOf('// describe') === -1) {
+		if (data && (data.indexOf('// describe') === -1)) {
 			callback(new Error('No inkblot comments in file: ' + file), data);
 		}
 
@@ -49,7 +54,7 @@ exports.writeJSON = function (fileName, obj) {
 			console.log(err);
 		}
 		else {
-			console.log('Create: [ ' + filePath + ' ]');
+			console.log('create:   [ ' + filePath + ' ]');
 		}
 	});
 };
