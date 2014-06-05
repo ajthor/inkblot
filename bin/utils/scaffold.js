@@ -15,10 +15,9 @@ var test = require('./test.js');
 // Scaffold Function (async)
 // -------------------------
 exports.scaffold = function (file, callback) {
-	console.log('..scaffolding');
-	
 	var ext = path.extname(file);
-	var base = path.basename(file, ext);
+	var base = path.basename(file);
+	console.log('..scaffolding \'%s\'', base);
 
 	async.waterfall([
 

@@ -24,7 +24,7 @@ var wiring = require('./wiring.js');
 // joins the two.
 exports.splice = function (file, obj, callback) {
 	var ext = path.extname(file);
-	var base = path.basename(file, ext);
+	var base = path.basename(file);
 	console.log('..splicing \'%s\'', base);
 
 	async.waterfall([

@@ -38,7 +38,9 @@ var loadTemplate = async.memoize(function (template, callback) {
 // -------------------------
 // 1. Load spec file. If no file exists, return an empty string.
 exports.generate = function (file, obj, callback) {
-	console.log('..generating');
+	var ext = path.extname(file);
+	var base = path.basename(file);
+	console.log('..generating \'%s\'', base);
 
 	if ((typeof file === 'undefined') || (file === null)) {
 		callback(new Error('File does not exist.'), null);
@@ -71,10 +73,6 @@ exports.generate = function (file, obj, callback) {
 			});
 		}.bind(this),
 
-		// Splice Tests
-		// ------------
-		// After loading the spec file, splice the tests 
-		// into the spec.
 		this.spliceTests.bind(this)
 
 	],
