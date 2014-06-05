@@ -1,8 +1,17 @@
 {
   "name": "inkblot",
-  "version": "0.0.0",
+  "version": "0.0.4",
   "main": "lib/inkblot.js",
+  "bin": {
+    "inkblot": "./bin/cli.js"
+  },
   "description": "Inline unit test tool.",
+  "keywords": ["test", "unit", "inline", "tests", "testing"],
+  "homepage": "https://github.com/ajthor/inkblot",
+  "bugs": "https://github.com/ajthor/inkblot/issues",
+  "author": {
+    "name": "ajthor",
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ajthor/inkblot.git"
@@ -12,28 +21,32 @@
   },
   "dependencies": {
     "async": "^0.8.0",
-    "chai": "^1.9.1",
-    "glob": "git://github.com/isaacs/node-glob",
+    "underscore": "^1.6.0",
+    "when": "^3.2.1",
     "inquirer": "^0.5.1",
     "js-beautify": "^1.5.1",
-    "minimist": "^0.1.0",
-    "mocha": "^1.20.0",
-    "underscore": "^1.6.0",
-    "when": "^3.2.1"
+    "glob": "git://github.com/isaacs/node-glob",
+    "minimist": "^0.1.0"
   },
   "devDependencies": {
+    "chai": "^1.9.1",
+    "mocha": "^1.20.0",
     "github": "^0.1.16",
     "grunt": "^0.4.4",
     "grunt-shell": "^0.7.0",
     "gulp": "^3.6.2",
-    "gulp-util": "^2.2.14",
-    "gulp-git": "^0.4.1",
-    "gulp-shell": "^0.2.4",
     "gulp-cached": "0.0.3",
+    "gulp-docco": "0.0.4",
+    "gulp-git": "^0.4.1",
     "gulp-remember": "^0.2.0",
-    "gulp-docco": "0.0.4"
+    "gulp-shell": "^0.2.4",
+    "gulp-util": "^2.2.14"
   },
   "scripts": {
-    "test": "mocha test"
+    "test": "mocha"
+  },
+  "directories": {
+    "lib": "./lib",
+    "bin": "./bin"
   }
 }
