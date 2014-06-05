@@ -6,11 +6,17 @@
     "inkblot": "./bin/cli.js"
   },
   "description": "Inline unit test tool.",
-  "keywords": ["test", "unit", "inline", "tests", "testing"],
+  "keywords": [
+    "test",
+    "unit",
+    "inline",
+    "tests",
+    "testing"
+  ],
   "homepage": "https://github.com/ajthor/inkblot",
   "bugs": "https://github.com/ajthor/inkblot/issues",
   "author": {
-    "name": "ajthor",
+    "name": "ajthor"
   },
   "repository": {
     "type": "git",
@@ -30,17 +36,19 @@
   },
   "devDependencies": {
     "chai": "^1.9.1",
-    "mocha": "^1.20.0",
     "github": "^0.1.16",
     "grunt": "^0.4.4",
     "grunt-shell": "^0.7.0",
-    "gulp": "^3.6.2",
+    "gulp": "^3.7.0",
     "gulp-cached": "0.0.3",
     "gulp-docco": "0.0.4",
     "gulp-git": "^0.4.1",
+    "gulp-jshint": "^1.6.2",
+    "gulp-mocha": "^0.4.1",
     "gulp-remember": "^0.2.0",
     "gulp-shell": "^0.2.4",
-    "gulp-util": "^2.2.14"
+    "gulp-util": "^2.2.14",
+    "mocha": "^1.20.0"
   },
   "scripts": {
     "test": "mocha"
