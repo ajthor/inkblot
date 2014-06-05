@@ -23,7 +23,9 @@ var wiring = require('./wiring.js');
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
 exports.splice = function (file, obj, callback) {
-	console.log('..splicing');
+	var ext = path.extname(file);
+	var base = path.basename(file, ext);
+	console.log('..splicing \'%s\'', base);
 
 	async.waterfall([
 		function (callback) {
@@ -44,7 +46,12 @@ exports.splice = function (file, obj, callback) {
 
 		// writeJSON,
 
-		writeOriginal
+		// writeOriginal,
+
+		// Return just the object as the result of the waterfall.
+		function (file, data, obj, callback) {
+			callback(null, obj);
+		}
 
 	],
 	function (err, result) {
@@ -236,11 +243,11 @@ var writeOriginal = function (file, data, obj, callback) {
 					console.log('clean:    [ ' + base + ' ]');
 				}
 
-				callback(null, obj);
+				callback(null, file, data, obj);
 			});
 		}
 		else {
-			callback(null, obj);
+			callback(null, file, data, obj);
 		}
 	}.bind(this));
 };
