@@ -46,8 +46,6 @@ exports.getInnerBlock = function (index, block) {
 // Retreives the whole block, including the wrapper function.
 exports.getOuterBlock = function (index, block) {
 	var end, start;
-	var blockCount = 1;
-
 	var i;
 
 	// Find the start of the block. Basically, it works backwards 

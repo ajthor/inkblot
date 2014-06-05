@@ -18,7 +18,6 @@ var _ = require('underscore');
 var async = require('async');
 
 var beautify = require('js-beautify').js_beautify;
-var test = require('./utils/test.js');
 
 // Global Functions
 // ----------------
@@ -59,7 +58,9 @@ _.extend(inkblot.prototype, {
 	// The entry-point into the program. Limit 3 files at once, it 
 	// calls `compile` on each file asynchronously.
 	run: function (files) {
-		if (!Array.isArray(files)) files = [files];
+		if (!Array.isArray(files)) {
+			files = [files];
+		}
 		async.eachLimit(files, 3, this.compile.bind(this), function (err) {
 			if (err) {
 				throw err;

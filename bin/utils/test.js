@@ -50,11 +50,13 @@ _.extend(test.prototype, {
 	// If any variables are contained within the comment string, in 
 	// the format {key:value}, find them and return them here.
 	getVariables: function () {
-		if (!this.variables) this.variables = {};
+		if (!this.variables) {
+			this.variables = {};
+		}
 		var match;
 		var key, value;
 
-		while (match = rxCurly.exec(this.raw)) {
+		while ((match = rxCurly.exec(this.raw))) {
 			if (match[1].indexOf(':') !== -1) {
 				key = /^(\S+)\:/.exec(match[1])[1];
 				value = /\:(\S+)/.exec(match[1])[1];

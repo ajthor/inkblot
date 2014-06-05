@@ -12,54 +12,6 @@ var path = require('path');
 
 var test = require('./test.js');
 
-// Scaffold Function (async)
-// -------------------------
-exports.scaffold = function (file, callback) {
-	var ext = path.extname(file);
-	var base = path.basename(file);
-	console.log('..scaffolding \'%s\'', base);
-
-	async.waterfall([
-
-		// loadModule Function
-		// -------------------
-		// Tries to load the module specified by the `file` variable. 
-		// If it loads, it calls `generateScaffolding` to generate a 
-		// scaffolding object. If it can't load the module, meaning 
-		// Node doesn't recognize it, then it returns an emty array.
-		function loadModule(callback) {
-			var loadedModule = null;
-			var obj = [];
-
-			var key = base.replace(/\./g, '-');
-			// camelCase the string
-			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : ''});
-
-			try {
-				loadedModule = require(file);
-				obj = generateScaffolding(key, '', loadedModule);
-			}
-			catch(e) {
-				console.warn('WARN: cannot scaffold module [ %s ]', file);
-				if (e) {
-					console.error('Error: ', e);
-				}
-			}
-			finally {
-				callback(null, obj);
-			}
-		}
-
-	],
-	function(err, result) {
-		if (err) {
-			console.log(err);
-		}
-
-		callback(null, file, result);
-	})
-};
-
 // generateScaffolding Function
 // ----------------------------
 // Using the output of a module, the `scaffold` function 
@@ -162,6 +114,53 @@ var generateScaffolding = function (key, parent, obj) {
 	}
 
 	return result;
+};
+
+// Scaffold Function (async)
+// -------------------------
+exports.scaffold = function (file, callback) {
+	var base = path.basename(file);
+	console.log('..scaffolding \'%s\'', base);
+
+	async.waterfall([
+
+		// loadModule Function
+		// -------------------
+		// Tries to load the module specified by the `file` variable. 
+		// If it loads, it calls `generateScaffolding` to generate a 
+		// scaffolding object. If it can't load the module, meaning 
+		// Node doesn't recognize it, then it returns an emty array.
+		function loadModule(callback) {
+			var loadedModule = null;
+			var obj = [];
+
+			var key = base.replace(/\./g, '-');
+			// camelCase the string
+			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : '';});
+
+			try {
+				loadedModule = require(file);
+				obj = generateScaffolding(key, '', loadedModule);
+			}
+			catch(e) {
+				console.warn('WARN: cannot scaffold module [ %s ]', file);
+				if (e) {
+					console.error('Error: ', e);
+				}
+			}
+			finally {
+				callback(null, obj);
+			}
+		}
+
+	],
+	function(err, result) {
+		if (err) {
+			console.log(err);
+		}
+
+		callback(null, file, result);
+	});
 };
 
 
