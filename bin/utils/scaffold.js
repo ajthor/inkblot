@@ -31,6 +31,10 @@ exports.scaffold = function (file, callback) {
 			var module = null;
 			var obj = [];
 
+			var key = base.replace(/\./g, '-');
+			// camelCase the string
+			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : ''});
+
 			try {
 				module = require(file);
 				obj = generateScaffolding(base, module);
