@@ -18,46 +18,6 @@ var inquirer = require('inquirer');
 var test = require('./test.js');
 var wiring = require('./wiring.js');
 
-// splice Function (async)
-// -----------------------
-// Accepts a file name and an object to splice the file into and 
-// joins the two.
-exports.splice = function (file, obj, callback) {
-	console.log('..splicing');
-
-	async.waterfall([
-		function (callback) {
-			fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
-				if (err) {
-					callback(err, null);
-				}
-
-				if (data && (data.indexOf('// describe') === -1)) {
-					callback(new Error('No inkblot comments in file: ' + file), obj);
-				}
-
-				callback(null, file, data, obj);
-			});
-		},
-
-		spliceObject,
-
-		// writeJSON,
-
-		writeOriginal
-
-	],
-	function (err, result) {
-		if (err) {
-			console.log(err);
-		}
-			
-		callback(null, file, result);
-	});
-
-	
-};
-
 // searchObject Function
 // ---------------------
 // Finds tests inside the scaffolding object to splice into. Returns 
@@ -97,7 +57,7 @@ var spliceObject = function (file, data, obj, callback) {
 
 	async.whilst(
 		function () {
-			return ~~((match = rxDescribe.exec(data)) !== null);
+			return ((match = rxDescribe.exec(data)) !== null);
 		},
 		function (callback) {
 			var target;
@@ -236,13 +196,59 @@ var writeOriginal = function (file, data, obj, callback) {
 					console.log('clean:    [ ' + base + ' ]');
 				}
 
-				callback(null, obj);
+				callback(null, file, data, obj);
 			});
 		}
 		else {
-			callback(null, obj);
+			callback(null, file, data, obj);
 		}
 	}.bind(this));
+};
+
+// splice Function (async)
+// -----------------------
+// Accepts a file name and an object to splice the file into and 
+// joins the two.
+exports.splice = function (file, obj, callback) {
+	var base = path.basename(file);
+	console.log('..splicing \'%s\'', base);
+
+	async.waterfall([
+		function (callback) {
+			fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
+				if (err) {
+					callback(err, null);
+				}
+
+				if (data && (data.indexOf('// describe') === -1)) {
+					callback(new Error('No inkblot comments in file: ' + file), obj);
+				}
+
+				callback(null, file, data, obj);
+			});
+		},
+
+		spliceObject,
+
+		writeJSON,
+
+		writeOriginal,
+
+		// Return just the object as the result of the waterfall.
+		function (file, data, obj, callback) {
+			callback(null, obj);
+		}
+
+	],
+	function (err, result) {
+		if (err) {
+			console.log(err);
+		}
+			
+		callback(null, file, result);
+	});
+
+	
 };
 
 

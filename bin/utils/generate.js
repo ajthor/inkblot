@@ -34,63 +34,64 @@ var loadTemplate = async.memoize(function (template, callback) {
 	});
 });
 
-// generate Function (async)
-// -------------------------
-// 1. Load spec file. If no file exists, return an empty string.
-exports.generate = function (file, obj, callback) {
-	console.log('..generating');
+// generateSpec Function
+// ---------------------
+// Generates the actual text which will go inside the spec file. 
+// It loads the templates from file and populates them with 
+// values from each item in the object passed to it.
+var generateSpec = function (obj, callback) {
+	var stream = '';
 
-	if ((typeof file === 'undefined') || (file === null)) {
-		callback(new Error('File does not exist.'), null);
+	if (!Array.isArray(obj)) {
+		callback(null, '');
 	}
-	async.waterfall([
+	else {
+		async.eachSeries(obj, function (item, next) {
+			var t;
+			var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
 
-		// loadSpecFile
-		// ------------
-		// Loads spec from file using the path to the module to 
-		// generate the name of the spec file.
-		function loadSpecFile(callback) {
-			var ext, base, specFile;
-
-			ext = path.extname(file);
-			base = path.basename(file, ext);
-			specFile = path.join(this.options.out, base + '.spec' + ext);
-
-			fs.exists(specFile, function (exists) {
-				if (exists) {
-					fs.readFile(specFile, 'utf8', function (err, data) {
-						if (err) {
-							console.log(err);
-						}
-						callback(null, obj, data);
-					});
+			// Read the template and parse the object into the 
+			// template to create a test.
+			fs.readFile(file, 'utf8', function (err, data) {
+				if (err) {
+					console.log(err);
 				}
-				else {
-					callback(null, obj, '');
-				}
+
+				// If the node has children, meaning there are some 
+				// items which should go inside this one, then 
+				// recursively call generate on the object.
+				async.waterfall([
+					function (callback) {
+						callback(null, item.children);
+					},
+
+					generateSpec
+				], 
+				function (err, result) {
+					if (err) {
+						console.log(err);
+					}
+
+					item.code = _.template(item.code, item);
+					item.children = result;
+
+					t = _.template(data, item);
+
+					stream += t;
+
+					next(null);
+				});
+
 			});
-		}.bind(this),
 
-		// Splice Tests
-		// ------------
-		// After loading the spec file, splice the tests 
-		// into the spec.
-		this.spliceTests.bind(this)
-
-	],
-	// applySpecTemplate Function
-	// --------------------------
-	// Takes the ouput stream of the previous function and passes it 
-	// through a standard spec template which adds chai libraries and 
-	// other required variables to file.
-	function (err, result) {
-		if (err) {
-			console.log(err);
-		}
-
-		callback(null, result);
-	});
-
+		}, 
+		function (err) {
+			if (err) {
+				console.log(err);
+			}
+			callback(null, stream);
+		});
+	}
 };
 
 // trimWhitespace Function
@@ -110,7 +111,7 @@ var trimWhitespace = function (block) {
 var diffBlocks = function (block1, block2) {
 	block1 = trimWhitespace(block1);
 	block2 = trimWhitespace(block2);
-	return ~~(block1 !== block2);
+	return (block1 !== block2);
 };
 
 
@@ -215,7 +216,7 @@ exports.spliceTests = function (obj, stream, callback) {
 				if (err) {
 					console.log(err);
 				}
-				stream += '\n\n' + result.trim();
+				stream += result.trim();
 				next(null);
 			});
 		}
@@ -230,64 +231,80 @@ exports.spliceTests = function (obj, stream, callback) {
 	});
 };
 
-// generateSpec Function
-// ---------------------
-// Generates the actual text which will go inside the spec file. 
-// It loads the templates from file and populates them with 
-// values from each item in the object passed to it.
-var generateSpec = function (obj, callback) {
-	var stream = '';
+// generate Function (async)
+// -------------------------
+// 1. Load spec file. If no file exists, return an empty string.
+exports.generate = function (file, obj, callback) {
+	var base = path.basename(file);
+	console.log('..generating \'%s\'', base);
 
-	if (!Array.isArray(obj)) {
-		callback(null, '');
+	if ((typeof file === 'undefined') || (file === null)) {
+		callback(new Error('File does not exist.'), null);
 	}
-	else {
-		async.eachSeries(obj, function (item, next) {
-			var t;
-			var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+	async.waterfall([
 
-			// Read the template and parse the object into the 
-			// template to create a test.
-			fs.readFile(file, 'utf8', function (err, data) {
+		// loadSpecFile
+		// ------------
+		// Loads spec from file using the path to the module to 
+		// generate the name of the spec file.
+		function loadSpecFile(callback) {
+			var ext, base, specFile;
+
+			ext = path.extname(file);
+			base = path.basename(file, ext);
+			specFile = path.join(this.options.out, base + '.spec' + ext);
+
+			fs.exists(specFile, function (exists) {
+				if (exists) {
+					fs.readFile(specFile, 'utf8', function (err, data) {
+						if (err) {
+							console.log(err);
+						}
+						callback(null, obj, data);
+					});
+				}
+				else {
+					callback(null, obj, '');
+				}
+			});
+		}.bind(this),
+
+		this.spliceTests.bind(this)
+
+	],
+	// applySpecTemplate Function
+	// --------------------------
+	// Takes the ouput stream of the previous function and passes it 
+	// through a standard spec template.
+
+	// i.e, If the result is based on a new file, we will need to 
+	// include the proper testing headers (chai libraries, etc.)
+	function (err, result) {
+		if (err) {
+			console.log(err);
+		}
+
+		if (result.indexOf('require(\'chai\')') === -1) {
+			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
 				if (err) {
 					console.log(err);
 				}
 
-				// If the node has children, meaning there are some 
-				// items which should go inside this one, then 
-				// recursively call generate on the object.
-				async.waterfall([
-					function (callback) {
-						callback(null, item.children);
-					},
-
-					generateSpec
-				], 
-				function (err, result) {
-					if (err) {
-						console.log(err);
-					}
-
-					item.code = _.template(item.code, item);
-					item.children = result;
-
-					t = _.template(data, item);
-
-					stream += t;
-
-					next(null);
+				result = _.template(data, {
+					name: obj[0].variables.name,
+					path: file,
+					code: result
 				});
 
+				callback(null, result);
 			});
+		}
+		else {
+			callback(null, result);
+		}
 
-		}, 
-		function (err) {
-			if (err) {
-				console.log(err);
-			}
-			callback(null, stream);
-		});
-	}
+	});
+
 };
 
 

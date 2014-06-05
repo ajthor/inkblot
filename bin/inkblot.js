@@ -18,7 +18,6 @@ var _ = require('underscore');
 var async = require('async');
 
 var beautify = require('js-beautify').js_beautify;
-var test = require('./utils/test.js');
 
 // Global Functions
 // ----------------
@@ -59,7 +58,9 @@ _.extend(inkblot.prototype, {
 	// The entry-point into the program. Limit 3 files at once, it 
 	// calls `compile` on each file asynchronously.
 	run: function (files) {
-		if (!Array.isArray(files)) files = [files];
+		if (!Array.isArray(files)) {
+			files = [files];
+		}
 		async.eachLimit(files, 3, this.compile.bind(this), function (err) {
 			if (err) {
 				throw err;
@@ -101,30 +102,7 @@ _.extend(inkblot.prototype, {
 
 			this.splice.bind(this),
 
-			this.generate.bind(this),
-
-			// If the result is based on a new file, we will need to 
-			// include the proper headers (including chai libraries, 
-			// etc.)
-			function applySpecTemplate(stream, callback) {
-				if (stream.indexOf('require(\'chai\')') === -1) {
-					fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
-						if (err) {
-							console.log(err);
-						}
-
-						stream = _.template(data, {
-							path: file,
-							code: stream
-						});
-
-						callback(null, stream);
-					});
-				}
-				else {
-					callback(null, stream);
-				}
-			}
+			this.generate.bind(this)
 
 		],
 		// Save File
