@@ -79,14 +79,34 @@ exports.generate = function (file, obj, callback) {
 	// applySpecTemplate Function
 	// --------------------------
 	// Takes the ouput stream of the previous function and passes it 
-	// through a standard spec template which adds chai libraries and 
-	// other required variables to file.
+	// through a standard spec template.
+
+	// i.e, If the result is based on a new file, we will need to 
+	// include the proper testing headers (chai libraries, etc.)
 	function (err, result) {
 		if (err) {
 			console.log(err);
 		}
 
-		callback(null, result);
+		if (result.indexOf('require(\'chai\')') === -1) {
+			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
+				if (err) {
+					console.log(err);
+				}
+
+				result = _.template(data, {
+					name: obj[0].variables.name,
+					path: file,
+					code: result
+				});
+
+				callback(null, result);
+			});
+		}
+		else {
+			callback(null, result);
+		}
+
 	});
 
 };
@@ -213,7 +233,7 @@ exports.spliceTests = function (obj, stream, callback) {
 				if (err) {
 					console.log(err);
 				}
-				stream += '\n\n' + result.trim();
+				stream += result.trim();
 				next(null);
 			});
 		}
