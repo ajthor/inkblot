@@ -1,30 +1,36 @@
-/* global describe, it, beforeEach, expect, should, assert, require */
+/* global describe, it, beforeEach, afterEach, before, after */
+/* global expect, should, assert, require */
 
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
     should = chai.should();
 
-var module = require('/Users/adam/Dropbox/inkblot/bin/utils/scaffold.js');
+describe('exported object', function() {
 
+    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/scaffold.js');
 
-
-describe('scaffold object', function() {
-
-    var scaffold = module;
-
-    it('should exist', function() {
-        expect(scaffold).to.exist;
+    it('should not be undefined', function() {
+        expect(exported).to.not.be.undefined;
     });
 
-    describe('scaffold function', function() {
+    describe('scaffoldJs object', function() {
 
-        var scaffoldFunc = scaffold.scaffold;
+        var scaffoldJs = exported;
 
         it('should exist', function() {
-            expect(scaffoldFunc).to.exist;
+            expect(scaffoldJs).to.exist;
+        });
+
+        describe('scaffold function', function() {
+
+            var scaffold = scaffoldJs.scaffold;
+
+            it('should exist', function() {
+                expect(scaffold).to.exist;
+            });
+
         });
 
     });
-
 });

@@ -1,50 +1,56 @@
-/* global describe, it, beforeEach, expect, should, assert, require */
+/* global describe, it, beforeEach, afterEach, before, after */
+/* global expect, should, assert, require */
 
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
     should = chai.should();
 
-var module = require('/Users/adam/Dropbox/inkblot/bin/utils/wiring.js');
+describe('exported object', function() {
 
+    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/wiring.js');
 
-
-describe('wiring object', function() {
-
-    var wiring = module;
-
-    it('should exist', function() {
-        expect(wiring).to.exist;
+    it('should not be undefined', function() {
+        expect(exported).to.not.be.undefined;
     });
 
-    describe('getInnerBlock function', function() {
+    describe('wiringJs object', function() {
 
-        var getInnerBlock = wiring.getInnerBlock;
+        var wiringJs = exported;
 
         it('should exist', function() {
-            expect(getInnerBlock).to.exist;
+            expect(wiringJs).to.exist;
+        });
+
+        describe('getInnerBlock function', function() {
+
+            var getInnerBlock = wiringJs.getInnerBlock;
+
+            it('should exist', function() {
+                expect(getInnerBlock).to.exist;
+            });
+
+        });
+
+        describe('getOuterBlock function', function() {
+
+            var getOuterBlock = wiringJs.getOuterBlock;
+
+            it('should exist', function() {
+                expect(getOuterBlock).to.exist;
+            });
+
+        });
+
+        describe('appendToBlock function', function() {
+
+            var appendToBlock = wiringJs.appendToBlock;
+
+            it('should exist', function() {
+                expect(appendToBlock).to.exist;
+            });
+
         });
 
     });
-
-    describe('getOuterBlock function', function() {
-
-        var getOuterBlock = wiring.getOuterBlock;
-
-        it('should exist', function() {
-            expect(getOuterBlock).to.exist;
-        });
-
-    });
-
-    describe('appendToBlock function', function() {
-
-        var appendToBlock = wiring.appendToBlock;
-
-        it('should exist', function() {
-            expect(appendToBlock).to.exist;
-        });
-
-    });
-
 });

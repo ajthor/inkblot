@@ -1,30 +1,36 @@
-/* global describe, it, beforeEach, expect, should, assert, require */
+/* global describe, it, beforeEach, afterEach, before, after */
+/* global expect, should, assert, require */
 
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
     should = chai.should();
 
-var module = require('/Users/adam/Dropbox/inkblot/bin/utils/splice.js');
+describe('exported object', function() {
 
+    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/splice.js');
 
-
-describe('splice object', function() {
-
-    var splice = module;
-
-    it('should exist', function() {
-        expect(splice).to.exist;
+    it('should not be undefined', function() {
+        expect(exported).to.not.be.undefined;
     });
 
-    describe('splice function', function() {
+    describe('spliceJs object', function() {
 
-        var spliceFunc = splice.splice;
+        var spliceJs = exported;
 
         it('should exist', function() {
-            expect(spliceFunc).to.exist;
+            expect(spliceJs).to.exist;
+        });
+
+        describe('splice function', function() {
+
+            var splice = spliceJs.splice;
+
+            it('should exist', function() {
+                expect(splice).to.exist;
+            });
+
         });
 
     });
-
 });

@@ -1,56 +1,62 @@
-/* global describe, it, beforeEach, expect, should, assert, require */
+/* global describe, it, beforeEach, afterEach, before, after */
+/* global expect, should, assert, require */
 
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
     should = chai.should();
 
-var module = require('/Users/adam/Dropbox/inkblot/bin/utils/test.js');
+describe('exported object', function() {
 
+    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/test.js');
 
-
-describe('test function', function() {
-
-    var test = module;
-
-    it('should exist', function() {
-        expect(test).to.exist;
+    it('should not be undefined', function() {
+        expect(exported).to.not.be.undefined;
     });
 
-    describe('test.prototype', function() {
+    describe('testJs function', function() {
 
-        var testProto = test.prototype;
+        var testJs = exported;
 
-        describe('initialize', function() {
-
-            var initialize = testProto.initialize;
-
-            it('should exist', function() {
-                expect(initialize).to.exist;
-            });
-
+        it('should exist', function() {
+            expect(testJs).to.exist;
         });
 
-        describe('getVariables', function() {
+        describe('testJs.prototype', function() {
 
-            var getVariables = testProto.getVariables;
+            var testJsProto = testJs.prototype;
 
-            it('should exist', function() {
-                expect(getVariables).to.exist;
+            describe('initialize', function() {
+
+                var initialize = testJsProto.initialize;
+
+                it('should exist', function() {
+                    expect(initialize).to.exist;
+                });
+
             });
 
-        });
+            describe('getVariables', function() {
 
-        describe('variable', function() {
+                var getVariables = testJsProto.getVariables;
 
-            var variable = testProto.variable;
+                it('should exist', function() {
+                    expect(getVariables).to.exist;
+                });
 
-            it('should exist', function() {
-                expect(variable).to.exist;
+            });
+
+            describe('variable', function() {
+
+                var variable = testJsProto.variable;
+
+                it('should exist', function() {
+                    expect(variable).to.exist;
+                });
+
             });
 
         });
 
     });
-
 });
