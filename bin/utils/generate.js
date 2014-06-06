@@ -22,9 +22,9 @@ var wiring = require('./wiring.js');
 // will memoize the output in order to load each template 
 // only once.
 var loadTemplate = async.memoize(function (template, callback) {
-	var file = path.resolve(path.join('../inkblot/lib/templates', template + '.js'));
+	var templateFile = path.resolve(path.join('../inkblot/lib/templates', template + '.js'));
 
-	fs.readFile(file, 'utf8', function (err, data) {
+	fs.readFile(templateFile, 'utf8', function (err, data) {
 		if (err) {
 			callback(err);
 		}
@@ -39,22 +39,22 @@ var loadTemplate = async.memoize(function (template, callback) {
 // Generates the actual text which will go inside the spec file. 
 // It loads the templates from file and populates them with 
 // values from each item in the object passed to it.
-var generateSpec = function (obj, callback) {
+var generateSpec = function (obj, done) {
 	var stream = '';
 
 	if (!Array.isArray(obj)) {
-		callback(null, '');
+		done(null, '');
 	}
 	else {
 		async.eachSeries(obj, function (item, next) {
 			var t;
-			var file = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+			var templateFile = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
 
 			// Read the template and parse the object into the 
 			// template to create a test.
-			fs.readFile(file, 'utf8', function (err, data) {
+			fs.readFile(templateFile, 'utf8', function (err, data) {
 				if (err) {
-					console.log(err);
+					this.log(err);
 				}
 
 				// If the node has children, meaning there are some 
@@ -69,7 +69,7 @@ var generateSpec = function (obj, callback) {
 				], 
 				function (err, result) {
 					if (err) {
-						console.log(err);
+						this.log(err);
 					}
 
 					item.code = _.template(item.code, item);
@@ -80,17 +80,17 @@ var generateSpec = function (obj, callback) {
 					stream += t;
 
 					next(null);
-				});
+				}.bind(this));
 
-			});
+			}.bind(this));
 
 		}, 
 		function (err) {
 			if (err) {
-				console.log(err);
+				this.log(err);
 			}
-			callback(null, stream);
-		});
+			done(null, stream);
+		}.bind(this));
 	}
 };
 
@@ -147,13 +147,13 @@ exports.spliceTests = function (obj, stream, callback) {
 				],
 				function (err, result) {
 					if (err) {
-						console.log(err);
+						this.log(err);
 					}
 
 					stream = stream.replace(block, result);
 
 					next(null);
-				});
+				}.bind(this));
 			}
 			// If the test doesn't have any children, it means this 
 			// test is at the end of a branch, and we can just 
@@ -170,7 +170,7 @@ exports.spliceTests = function (obj, stream, callback) {
 				],
 				function (err, result) {
 					if (err) {
-						console.log(err);
+						this.log(err);
 					}
 
 					block = wiring.getOuterBlock(index, stream);
@@ -195,7 +195,7 @@ exports.spliceTests = function (obj, stream, callback) {
 					else {
 						next(null);
 					}
-				});
+				}.bind(this));
 
 
 			}
@@ -214,17 +214,17 @@ exports.spliceTests = function (obj, stream, callback) {
 			],
 			function (err, result) {
 				if (err) {
-					console.log(err);
+					this.log(err);
 				}
 				stream += result.trim();
 				next(null);
-			});
+			}.bind(this));
 		}
 
 	}.bind(this),
 	function (err) {
 		if (err) {
-			console.log(err);
+			this.log(err);
 		}
 
 		callback(null, stream);
@@ -233,32 +233,20 @@ exports.spliceTests = function (obj, stream, callback) {
 
 // generate Function (async)
 // -------------------------
-// 1. Load spec file. If no file exists, return an empty string.
 exports.generate = function (file, obj, callback) {
-	var base = path.basename(file);
-	console.log('..generating \'%s\'', base);
+	this.log('..generating');
 
-	if ((typeof file === 'undefined') || (file === null)) {
-		callback(new Error('File does not exist.'), null);
-	}
 	async.waterfall([
-
 		// loadSpecFile
 		// ------------
 		// Loads spec from file using the path to the module to 
 		// generate the name of the spec file.
 		function loadSpecFile(callback) {
-			var ext, base, specFile;
-
-			ext = path.extname(file);
-			base = path.basename(file, ext);
-			specFile = path.join(this.options.out, base + '.spec' + ext);
-
-			fs.exists(specFile, function (exists) {
+			fs.exists(file.spec, function (exists) {
 				if (exists) {
-					fs.readFile(specFile, 'utf8', function (err, data) {
+					fs.readFile(file.spec, 'utf8', function (err, data) {
 						if (err) {
-							console.log(err);
+							this.log(err);
 						}
 						callback(null, obj, data);
 					});
@@ -266,7 +254,7 @@ exports.generate = function (file, obj, callback) {
 				else {
 					callback(null, obj, '');
 				}
-			});
+			}.bind(this));
 		}.bind(this),
 
 		this.spliceTests.bind(this)
@@ -281,29 +269,29 @@ exports.generate = function (file, obj, callback) {
 	// include the proper testing headers (chai libraries, etc.)
 	function (err, result) {
 		if (err) {
-			console.log(err);
+			this.log(err);
 		}
 
 		if (result.indexOf('require(\'chai\')') === -1) {
 			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
 				if (err) {
-					console.log(err);
+					this.log(err);
 				}
 
 				result = _.template(data, {
 					name: obj[0].variables.name,
-					path: file,
+					path: file.path,
 					code: result
 				});
 
 				callback(null, result);
-			});
+			}.bind(this));
 		}
 		else {
 			callback(null, result);
 		}
 
-	});
+	}.bind(this));
 
 };
 
