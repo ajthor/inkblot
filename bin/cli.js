@@ -57,7 +57,7 @@ var parseArgv = function (argv) {
 // files. The latter is for removing the test comments from the files 
 // it looks through.
 var i, len;
-var argv = process.argv.slice(3);
+var argv = process.argv.slice(2);
 
 var obj = parseArgv(argv);
 var utility = new inkblot(obj);
