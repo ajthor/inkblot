@@ -93,7 +93,7 @@ var generateScaffolding = function (key, parent, obj) {
 	// exists.
 	default:
 		result.push(new test({
-			raw: key + ' ' + typeof obj,
+			raw: key,
 			parent: parent,
 			variables: {
 				name: (key || _.uniqueId(typeof obj)),
