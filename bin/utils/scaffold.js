@@ -133,7 +133,7 @@ exports.scaffold = function (file, callback) {
 			var loadedModule = null;
 			var obj = [];
 
-			var key = file.base.replace(/\./g, '-');
+			var key = file.name.replace(/\./g, '-');
 			// camelCase the string
 			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : '';});
 
