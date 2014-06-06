@@ -76,18 +76,6 @@ describe('exported object', function() {
                     expect(log).to.exist;
                 });
 
-                it('should pretty-print output to the console', function() {
-                    log('hello');
-                });
-
-                it('should accept multiple argument', function() {
-                    log('hello', 'world');
-                });
-
-                it('should colorize strings within single quotes', function() {
-                    log('hello', 'world', '\'file\'');
-                });
-
             });
 
             describe('run', function() {
@@ -106,6 +94,10 @@ describe('exported object', function() {
 
                 it('should exist', function() {
                     expect(compile).to.exist;
+                });
+
+                it('should fail if passed a path', function(done) {
+                    compile('/some/path.js', done);
                 });
 
             });

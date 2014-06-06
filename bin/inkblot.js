@@ -51,6 +51,12 @@ _.extend(inkblot.prototype, require('./utils/scaffold.js'));
 _.extend(inkblot.prototype, require('./utils/splice.js'));
 _.extend(inkblot.prototype, require('./utils/generate.js'));
 
+// describe compile
+	it('should fail if passed a path', function (done) {
+		compile('/some/path.js', done);
+	});
+// end
+
 // Inkblot Prototype
 // -----------------
 _.extend(inkblot.prototype, {
