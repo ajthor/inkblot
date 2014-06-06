@@ -93,7 +93,7 @@ var generateScaffolding = function (key, parent, obj) {
 	// exists.
 	default:
 		result.push(new test({
-			raw: key,
+			raw: key + ' ' + typeof obj,
 			parent: parent,
 			variables: {
 				name: (key || _.uniqueId(typeof obj)),
@@ -119,8 +119,7 @@ var generateScaffolding = function (key, parent, obj) {
 // Scaffold Function (async)
 // -------------------------
 exports.scaffold = function (file, callback) {
-	var base = path.basename(file);
-	console.log('..scaffolding \'%s\'', base);
+	this.log('..scaffolding');
 
 	async.waterfall([
 
@@ -134,18 +133,18 @@ exports.scaffold = function (file, callback) {
 			var loadedModule = null;
 			var obj = [];
 
-			var key = base.replace(/\./g, '-');
+			var key = file.base.replace(/\./g, '-');
 			// camelCase the string
 			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : '';});
 
 			try {
-				loadedModule = require(file);
+				loadedModule = require(file.path);
 				obj = generateScaffolding(key, '', loadedModule);
 			}
 			catch(e) {
-				console.warn('WARN: cannot scaffold module [ %s ]', file);
+				this.log('WARN: cannot scaffold module', '\'' + file.name + '\'');
 				if (e) {
-					console.error('Error: ', e);
+					this.log('Error: ', e);
 				}
 			}
 			finally {
@@ -156,11 +155,11 @@ exports.scaffold = function (file, callback) {
 	],
 	function(err, result) {
 		if (err) {
-			console.log(err);
+			this.log(err);
 		}
 
 		callback(null, file, result);
-	});
+	}.bind(this));
 };
 
 

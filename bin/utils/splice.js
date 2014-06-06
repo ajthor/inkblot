@@ -46,7 +46,7 @@ var searchObject = function (needle, haystack) {
 // or the empty array passed if the module could not be loaded, 
 // splice the code in the source file into unit test objects and put 
 // them into the scaffolding object where they belong.
-var spliceObject = function (file, data, obj, callback) {
+var spliceObject = function (file, data, obj, done) {
 	var match;
 
 	// Regular Expressions
@@ -134,11 +134,11 @@ var spliceObject = function (file, data, obj, callback) {
 
 		function (err) {
 			if (err) {
-				console.log(err);
+				this.log(err);
 			}
 
-			callback(null, file, data, obj);
-		}
+			done(null, file, data, obj);
+		}.bind(this)
 	);
 };
 
@@ -147,9 +147,7 @@ var spliceObject = function (file, data, obj, callback) {
 // Mostly a developer function to output the entire object created by 
 // inkblot from scaffolding the object and parsing the comments.
 var writeJSON = function (file, data, obj, callback) {
-	var ext = path.extname(file);
-	var base = path.basename(file, ext);
-	var filePath = path.join('./test/', base + '.json');
+	var filePath = path.join('./test/', file.base + '.json');
 
 	inquirer.prompt({
 		type: 'confirm',
@@ -160,14 +158,14 @@ var writeJSON = function (file, data, obj, callback) {
 		if (answers.overwrite === true) {
 			fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
 				if (err) {
-					console.log(err);
+					this.log(err);
 				}
 				else {
-					console.log('create:   [ ' + filePath + ' ]');
+					this.log('create:   ', '\'' + filePath + '\'');
 				}
 
 				callback(null, file, data, obj);
-			});
+			}.bind(this));
 		}
 		else {
 			callback(null, file, data, obj);
@@ -179,25 +177,23 @@ var writeJSON = function (file, data, obj, callback) {
 // ---------------------
 // Saves the cleaned file back to the original location.
 var writeOriginal = function (file, data, obj, callback) {
-	var base = path.basename(file);
-
 	inquirer.prompt({
 		type: 'confirm',
 		name: 'overwrite',
-		message: 'Do you want to remove inline tests from ' + base + '?',
+		message: 'Do you want to remove inline tests from ' + file.base + '?',
 		default: false
 	}, function (answers) {
 		if (answers.overwrite === true) {
-			fs.writeFile(file, data, function (err) {
+			fs.writeFile(file.path, data, function (err) {
 				if (err) {
-					console.log(err);
+					this.log(err);
 				}
 				else {
-					console.log('clean:    [ ' + base + ' ]');
+					this.log('clean:    ', '\'' + base + '\'');
 				}
 
 				callback(null, file, data, obj);
-			});
+			}.bind(this));
 		}
 		else {
 			callback(null, file, data, obj);
@@ -209,30 +205,25 @@ var writeOriginal = function (file, data, obj, callback) {
 // -----------------------
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
-exports.splice = function (file, obj, callback) {
-	var base = path.basename(file);
-	console.log('..splicing \'%s\'', base);
+exports.splice = function (file, obj, done) {
+	this.log('..splicing');
 
 	async.waterfall([
 		function (callback) {
-			fs.readFile(file, {encoding: 'utf8'}, function (err, data) {
-				if (err) {
-					callback(err, null);
-				}
+			var data = file._contents.toString('utf8');
 
-				if (data && (data.indexOf('// describe') === -1)) {
-					callback(new Error('No inkblot comments in file: ' + file), obj);
-				}
+			if (data && (data.indexOf('// describe') === -1)) {
+				callback(new Error('No inkblot comments in file: ' + file.name));
+			}
 
-				callback(null, file, data, obj);
-			});
+			callback(null, file, data, obj);
 		},
 
 		spliceObject,
 
-		writeJSON,
+		// writeJSON,
 
-		writeOriginal,
+		// writeOriginal,
 
 		// Return just the object as the result of the waterfall.
 		function (file, data, obj, callback) {
@@ -242,10 +233,11 @@ exports.splice = function (file, obj, callback) {
 	],
 	function (err, result) {
 		if (err) {
-			console.log(err);
+			done(err);
 		}
-			
-		callback(null, file, result);
+		else {
+			done(null, file, result);
+		}
 	});
 
 	
