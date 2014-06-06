@@ -8,6 +8,7 @@ var cache = require('gulp-cached');
 var remember = require('gulp-remember');
 
 var jshint = require('gulp-jshint');
+var inkblot = require('gulp-inkblot');
 var mocha = require('gulp-mocha');
 
 // Testing Task
@@ -19,6 +20,12 @@ gulp.task('lint', function () {
 		.pipe(jshint.reporter('default'));
 });
 
+gulp.task('inkblot', function () {
+	return gulp.src(['./bin/**/*.js'])
+		.pipe(inkblot())
+		.on('error', gutil.log);
+});
+
 gulp.task('test', function () {
 	return gulp.src(['./test/**/*.spec.js'])
 		.pipe(mocha())
@@ -26,11 +33,11 @@ gulp.task('test', function () {
 });
 
 gulp.task('watch', function () {
-	gulp.watch(['./bin/**/*.js'], ['lint', 'test']);
+	gulp.watch(['./bin/**/*.js'], ['lint', 'inkblot', 'test']);
 	gulp.watch(['./test/**/*.spec.js'], ['test']);
 });
 
-gulp.task('default', ['lint', 'test', 'watch']);
+gulp.task('default', ['lint', 'inkblot', 'test', 'watch']);
 
 // Docs Task
 // =========
