@@ -21,7 +21,7 @@ var usageMsg = 'usage:  inkblot <command> [options]';
 
 var usage = function () {
 	console.log(usageMsg);
-}
+};
 
 // Parse Arguments
 // ---------------
@@ -36,7 +36,7 @@ var parseArgv = function (argv) {
 	};
 
 	for (i = argv.length; i--; ) {
-		if (argv[i].slice(2) == '--') { // Option
+		if (argv[i].slice(2) === '--') { // Option
 			obj[ argv[i].slice(2) ] = true;
 		}
 		else if (argv[i][0] === '-') { // Flag

@@ -12,56 +12,13 @@ var path = require('path');
 
 var test = require('./test.js');
 
-// Scaffold Function (async)
-// -------------------------
-exports.scaffold = function (file, callback) {		
-	var ext = path.extname(file);
-	var base = path.basename(file, ext);
-
-	async.waterfall([
-
-		// loadModule Function
-		// -------------------
-		// Tries to load the module specified by the `file` variable. 
-		// If it loads, it calls `generateScaffolding` to generate a 
-		// scaffolding object. If it can't load the module, meaning 
-		// Node doesn't recognize it, then it returns an emty array.
-		function loadModule(callback) {
-			var module = null;
-			var obj = [];
-
-			try {
-				module = require(file);
-				obj = generateScaffolding(base, module);
-			}
-			catch(e) {
-				console.warn('WARN: cannot scaffold module [ %s ]', file);
-				if (e) {
-					console.error('Error: ', e.stack);
-				}
-			}
-			finally {
-				callback(null, obj);
-			}
-		}
-
-	],
-	function(err, result) {
-		if (err) {
-			console.log(err);
-		}
-
-		callback(null, file, result);
-	})
-};
-
 // generateScaffolding Function
 // ----------------------------
 // Using the output of a module, the `scaffold` function 
 // traverses the object and generates a suite of unit tests to 
 // cover the module. If the objects have prototypes, it will 
 // create tests to cover the prototypes as well.
-var generateScaffolding = function (key, obj) {
+var generateScaffolding = function (key, parent, obj) {
 	var result = [];
 	var children = [];
 	var protoChildren = [];
@@ -81,6 +38,7 @@ var generateScaffolding = function (key, obj) {
 			template: 'it',
 			raw: 'should exist',
 			code: 'expect(<%= variable(\'name\') %>).to.exist;',
+			parent: parent,
 			variables: {
 				name: (key || _.uniqueId(typeof obj))
 			}
@@ -90,7 +48,7 @@ var generateScaffolding = function (key, obj) {
 		// for them.
 		for (item in obj) {
 			if (obj.hasOwnProperty(item)) {
-				children = children.concat(generateScaffolding(item, obj[item]));
+				children = children.concat(generateScaffolding(item, key, obj[item]));
 			}
 		}
 
@@ -99,14 +57,16 @@ var generateScaffolding = function (key, obj) {
 		// those properties.
 		for (item in obj.prototype) {
 			if (obj.prototype.hasOwnProperty(item)) {
-				protoChildren = protoChildren.concat(generateScaffolding(item, obj[item]));
+				protoChildren = protoChildren.concat(generateScaffolding(item, key + 'Proto', obj[item]));
 			}
 		}
 		if (protoChildren.length) {
 			children.push(new test({
 				raw: key + '.prototype',
+				parent: parent,
 				variables: {
-					name: key + 'Proto'
+					name: key + 'Proto',
+					value: key + '.prototype'
 				}
 			}, protoChildren));
 		}
@@ -118,9 +78,11 @@ var generateScaffolding = function (key, obj) {
 		// Using the `key` argument, or, if none is provided, 
 		// a unique identifier, generate some unit test.
 		result.push(new test({
-			raw: typeof obj + ' ' + key,
+			raw: key + ' ' + typeof obj,
+			parent: parent,
 			variables: {
-				name: (key || _.uniqueId(typeof obj))
+				name: (key || _.uniqueId(typeof obj)),
+				value: parent ? (parent + '.' + key) : 'exported'
 			}
 		}, children));
 		break;
@@ -132,15 +94,19 @@ var generateScaffolding = function (key, obj) {
 	default:
 		result.push(new test({
 			raw: key,
+			parent: parent,
 			variables: {
-				name: (key || _.uniqueId(typeof obj))
+				name: (key || _.uniqueId(typeof obj)),
+				value: parent + '.' + key
 			}
 		}, [new test({
 				template: 'it',
 				raw: 'should exist',
 				code: 'expect(<%= variable(\'name\') %>).to.exist;',
+				parent: parent,
 				variables: {
-					name: (key || _.uniqueId(typeof obj))
+					name: (key || _.uniqueId(typeof obj)),
+					value: parent + '.' + key
 				}
 			})]
 		));
@@ -148,6 +114,53 @@ var generateScaffolding = function (key, obj) {
 	}
 
 	return result;
+};
+
+// Scaffold Function (async)
+// -------------------------
+exports.scaffold = function (file, callback) {
+	var base = path.basename(file);
+	console.log('..scaffolding \'%s\'', base);
+
+	async.waterfall([
+
+		// loadModule Function
+		// -------------------
+		// Tries to load the module specified by the `file` variable. 
+		// If it loads, it calls `generateScaffolding` to generate a 
+		// scaffolding object. If it can't load the module, meaning 
+		// Node doesn't recognize it, then it returns an emty array.
+		function loadModule(callback) {
+			var loadedModule = null;
+			var obj = [];
+
+			var key = base.replace(/\./g, '-');
+			// camelCase the string
+			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : '';});
+
+			try {
+				loadedModule = require(file);
+				obj = generateScaffolding(key, '', loadedModule);
+			}
+			catch(e) {
+				console.warn('WARN: cannot scaffold module [ %s ]', file);
+				if (e) {
+					console.error('Error: ', e);
+				}
+			}
+			finally {
+				callback(null, obj);
+			}
+		}
+
+	],
+	function(err, result) {
+		if (err) {
+			console.log(err);
+		}
+
+		callback(null, file, result);
+	});
 };
 
 

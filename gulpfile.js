@@ -7,6 +7,38 @@ var docco = require('gulp-docco');
 var cache = require('gulp-cached');
 var remember = require('gulp-remember');
 
+var jshint = require('gulp-jshint');
+var inkblot = require('gulp-inkblot');
+var mocha = require('gulp-mocha');
+
+// Testing Task
+// ============
+
+gulp.task('lint', function () {
+	return gulp.src(['./bin/**/*.js'])
+		.pipe(jshint())
+		.pipe(jshint.reporter('default'));
+});
+
+gulp.task('inkblot', function () {
+	return gulp.src(['./bin/**/*.js'])
+		.pipe(inkblot())
+		.on('error', gutil.log);
+});
+
+gulp.task('test', function () {
+	return gulp.src(['./test/**/*.spec.js'])
+		.pipe(mocha())
+		.on('error', gutil.log);
+});
+
+gulp.task('watch', function () {
+	gulp.watch(['./bin/**/*.js'], ['lint', 'inkblot', 'test']);
+	gulp.watch(['./test/**/*.spec.js'], ['test']);
+});
+
+gulp.task('default', ['lint', 'inkblot', 'test', 'watch']);
+
 // Docs Task
 // =========
 // The `docs` task builds docco files, switches to the gh-pages 
