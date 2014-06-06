@@ -17,6 +17,8 @@ var path = require('path');
 var _ = require('underscore');
 var async = require('async');
 
+var chalk = require('chalk');
+
 var beautify = require('js-beautify').js_beautify;
 
 // Global Functions
@@ -52,6 +54,26 @@ _.extend(inkblot.prototype, require('./utils/generate.js'));
 // Inkblot Prototype
 // -----------------
 _.extend(inkblot.prototype, {
+
+	// Log Function
+	// ------------
+	// Helper function to pretty-print to the console.
+	log: function (message) {
+		var start, end;
+		var ibLog = '['+chalk.green('inkblot')+']';
+		var args = Array.prototype.slice.call(arguments);
+		args.unshift(ibLog);
+
+		var i, match;
+		for (i = args.length; i--; ) {
+			if ((match = /\'(.+?)\'/.exec(args[i])) !== null) {
+				args[i] = '[ '+chalk.cyan(match[1])+' ]';
+			}
+		}
+
+		console.log.apply(console, args);
+		return this;
+	},
 
 	// Run Function
 	// ------------
