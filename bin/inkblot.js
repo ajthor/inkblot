@@ -77,18 +77,66 @@ _.extend(inkblot.prototype, {
 
 	// Run Function
 	// ------------
-	// The entry-point into the program. Limit 3 files at once, it 
-	// calls `compile` on each file asynchronously.
-	run: function (files) {
-		if (!Array.isArray(files)) {
-			files = [files];
+	// The entry-point into the program. One file at a time, it calls 
+	// `compile` on each file asynchronously.
+	run: function (globs) {
+		if (!Array.isArray(globs)) {
+			globs = [globs];
 		}
-		async.eachLimit(files, 3, this.compile.bind(this), function (err) {
+		async.eachSeries(globs, function (item, next) {
+			this.log('load', '\'' + item + '\'');
+			item = path.resolve(item);
+
+			// Make sure the file being loaded is not a '.spec'. 
+			// If it is, quit and move on to the next file.
+			if (item.indexOf('.spec') !== -1) {
+				next(new Error('Cannot run inkblot on a spec file: ' + item));
+			}
+
+			// load file
+			// create file object
+			// pass to compile function
+			fs.readFile(item, function (err, data) {
+				if (err) {
+					next(err);
+				}
+
+				async.waterfall([
+					function (callback) {
+						var ext = path.extname(item);
+						var base = path.basename(item, ext);
+
+						callback(null, {
+							cwd: process.cwd(),
+							path: item,
+							ext: ext,
+							base: base,
+							name: path.basename(item),
+							spec: path.join(this.options.out, base + '.spec' + ext),
+							_contents: data
+						});
+					}.bind(this),
+
+					this.compile.bind(this)
+
+				],
+				function (err, result) {
+					if (err) {
+						this.log(err);
+					}
+
+					next(null);
+
+				}.bind(this));
+			}.bind(this));
+
+		}.bind(this),
+		function (err) {
 			if (err) {
 				throw err;
 			}
-			console.log('Done.');
-		});
+			this.log('Done.');
+		}.bind(this));
 	},
 
 	// Compile Function
@@ -102,23 +150,8 @@ _.extend(inkblot.prototype, {
 		async.waterfall([
 			// Resolve the file name.
 			function fileName(callback) {
-				process.stdout.write('[ ' + file + ' ]\n');
-				file = path.resolve(file);
-
-				// Make sure the file being loaded is not a '.spec'. 
-				// If it is, quit and move on to the next file.
-				if (file.indexOf('.spec') !== -1) {
-					callback(new Error('Cannot run inkblot on a spec file: ' + file), null);
-				}
-
-				fs.exists(file, function (exists) {
-					if (!exists) {
-						callback(new Error('File does not exist.'), null);
-					}
-
-					callback(null, file);
-				});
-			},
+				callback(null, file);
+			}.bind(this),
 
 			this.scaffold.bind(this),
 
@@ -132,26 +165,21 @@ _.extend(inkblot.prototype, {
 		// Save the file to the output directory if no errors 
 		// occurred along the way.
 		function (err, result) {
-			var ext, base, specFile;
-
 			if (err) {
-				console.log(err.message);
+				done(err);
 			}
 			else {
-
-				ext = path.extname(file);
-				base = path.basename(file, ext);
-				specFile = path.join(this.options.out, base + '.spec' + ext);
-
 				result = beautify(result, {indent_size: 4});
 
-				fs.writeFile(specFile, result, function (err) {
+				fs.writeFile(file.spec, result, function (err) {
 					if (err) {
-						throw err;
+						done(err);
 					}
-					process.stdout.write('compiled: [ ' + specFile + ' ]\n');
-					done(null);
-				});
+					else {
+						this.log('compiled:', '\'' + file.spec + '\'');
+						done(null);
+					}
+				}.bind(this));
 			}
 		}.bind(this));
 	}
