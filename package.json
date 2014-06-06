@@ -1,9 +1,9 @@
 {
   "name": "inkblot",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "bin/inkblot.js",
   "bin": {
-    "inkblot": "./bin/cli.js"
+    "inkblot": "bin/cli.js"
   },
   "description": "Inline unit test tool.",
   "keywords": [
