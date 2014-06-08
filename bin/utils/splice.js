@@ -51,7 +51,7 @@ var spliceObject = function (file, data, obj, done) {
 
 	// Regular Expressions
 	// -------------------
-	var rxDescribe = new RegExp('\s*// (describe (.+))\n', 'g');
+	var rxDescribe = new RegExp('\s*'+file.symbol+' (describe (.+))\n', 'g');
 	var rxIt       = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
 	// var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
 
@@ -73,7 +73,7 @@ var spliceObject = function (file, data, obj, done) {
 			// as a new child test.
 			ref = searchObject(match[2], obj);
 
-			block = data.slice(match.index + match[0].length, data.indexOf('// end', match.index));
+			block = data.slice(match.index + match[0].length, data.indexOf(file.symbol+' end', match.index));
 
 			// If nothing is found, we can assume that the test is 
 			// something new that we aren't expecting to be tested.
@@ -125,7 +125,7 @@ var spliceObject = function (file, data, obj, done) {
 			}
 
 			// Remove the block once the tests have been pulled out of it
-			block = data.slice(match.index, data.indexOf('// end', match.index) + 7);
+			block = data.slice(match.index, data.indexOf(file.symbol+' end', match.index) + 7);
 			data = data.replace(block, '');
 
 			callback(null);
@@ -227,8 +227,8 @@ exports.splice = function (file, obj, done) {
 		function (callback) {
 			var data = file._contents.toString('utf8');
 
-			if (data && (data.indexOf('// describe') === -1)) {
-				callback(new Error('No inkblot comments in file: ' + file.name));
+			if (data && (data.indexOf(file.symbol+' describe') === -1)) {
+				return callback('No inkblot comments in file: ' + file.name);
 			}
 
 			callback(null, file, data, obj);

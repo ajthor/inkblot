@@ -223,10 +223,16 @@ _.extend(inkblot.prototype, {
 				var ext;
 				for (ext in languages) {
 					if (file.ext === ext) {
-						this.singleComment = languages[ext].single;
-						this.blockComment = languages[ext].block;
+						file.type = languages[ext].name;
+						file.symbol = languages[ext].symbol;
 					}
 				}
+				if (typeof file.symbol === 'undefined' || file.symbol === '') {
+					return callback(new Error('Cannot run inkblot on file: ' + file.name));
+				}
+
+				this.log('file type resolved to', file.type);
+
 				callback(null, file);
 			}.bind(this),
 
