@@ -1,3 +1,17 @@
+/* globals describe it beforeEach before after afterEach expect */
+
+// Global variable definitions to accomodate wayward function errors 
+// in syntax.
+global.describe = function () {};
+global.it = function () {};
+
+global.before = function () {};
+global.after = function () {};
+global.beforeEach = function () {};
+global.afterEach = function () {};
+
+
+
 // Inkblot
 // =======
 // Node.js program to generate unit tests from inline comments. 
@@ -20,18 +34,6 @@ var async = require('async');
 var chalk = require('chalk');
 
 var beautify = require('js-beautify').js_beautify;
-
-// Global Functions
-// ----------------
-// Global variable definitions to accomodate wayward function errors 
-// in syntax.
-global.describe = function () {};
-
-global.it = function () {};
-
-global.beforeEach = function () {};
-
-
 
 // Inkblot Object
 // ==============
