@@ -75,6 +75,7 @@ describe('exported object', function() {
                 it('should exist', function() {
                     expect(log).to.exist;
                 });
+
                 it('should output nothing if the \'silent\' option is passed', function() {});
 
             });
@@ -97,31 +98,26 @@ describe('exported object', function() {
                     expect(compile).to.exist;
                 });
 
-                it('should fail if passed a path', function() {
-                    expect(function() {
-
-                        compile('/some/path.js', function(err) {
-                            if (err) {
-                                throw err;
-                            }
-                        });
-
-                    }).to.throw(Error);
-                });
-                it('should fail if passed a Buffer', function() {
-                    expect(function() {
-
-                        compile(new Buffer('Hello, world!'), function(err) {
-                            if (err) {
-                                throw err;
-                            }
-                        });
-
-                    }).to.throw(Error);
-                });
-
             });
 
+        });
+
+        it('should have default options', function() {
+            var instance = new inkblotJs({});
+
+            expect(instance.options).to.exist;
+            expect(instance.options.autoReplace).to.equal(true);
+            expect(instance.options.autoRemove).to.equal(false);
+            expect(instance.options.enablePrompts).to.equal(false);
+            expect(instance.options.silent).to.equal(false);
+        });
+
+        it('should accept options as arguments', function() {
+            var instance = new inkblotJs({
+                silent: true
+            });
+
+            expect(instance.options.silent).to.equal(true);
         });
 
     });

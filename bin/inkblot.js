@@ -41,11 +41,21 @@ var beautify = require('js-beautify').js_beautify;
 // without calling the main function, `run` on some file name.
 // describe inkblotJs function
 	it('should have default options', function () {
-		expect(inkblotJs.options).to.exist;
-		expect(inkblotJs.options.autoReplace).to.equal(true);
-		expect(inkblotJs.options.autoRemove).to.equal(false);
-		expect(inkblotJs.options.enablePrompts).to.equal(false);
-		expect(inkblotJs.options.silent).to.equal(true);
+		var instance = new inkblotJs({});
+
+		expect(instance.options).to.exist;
+		expect(instance.options.autoReplace).to.equal(true);
+		expect(instance.options.autoRemove).to.equal(false);
+		expect(instance.options.enablePrompts).to.equal(false);
+		expect(instance.options.silent).to.equal(false);
+	});
+
+	it('should accept options as arguments', function () {
+		var instance = new inkblotJs({
+			silent: true
+		});
+
+		expect(instance.options.silent).to.equal(true);
 	});
 // end
 var inkblot = module.exports = function (options) {
