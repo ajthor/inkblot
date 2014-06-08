@@ -33,6 +33,8 @@ var async = require('async');
 
 var chalk = require('chalk');
 
+var languages = require('../lib/languages.json');
+
 var beautify = require('js-beautify').js_beautify;
 
 // Inkblot Object
@@ -213,8 +215,18 @@ _.extend(inkblot.prototype, {
 	// it will not write the file.
 	compile: function (file, done) {
 		async.waterfall([
-			// Resolve the file name.
-			function fileName(callback) {
+			function resolveLanguage(callback) {
+				// Figure out which language this file is based on 
+				// the extension. If there is an entry in the 
+				// `languages.json` file, then load the symbol lookup
+				// info for this file.
+				var ext;
+				for (ext in languages) {
+					if (file.ext === ext) {
+						this.singleComment = languages[ext].single;
+						this.blockComment = languages[ext].block;
+					}
+				}
 				callback(null, file);
 			}.bind(this),
 
