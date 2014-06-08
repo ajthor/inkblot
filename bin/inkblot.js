@@ -37,10 +37,28 @@ global.beforeEach = function () {};
 // ==============
 // The main object in the file. It does not do much on its own 
 // without calling the main function, `run` on some file name.
+// describe inkblotJs function
+	it('should have default options', function () {
+		expect(inkblotJs.options).to.exist;
+		expect(inkblotJs.options.autoReplace).to.equal(true);
+		expect(inkblotJs.options.autoRemove).to.equal(false);
+		expect(inkblotJs.options.enablePrompts).to.equal(false);
+		expect(inkblotJs.options.silent).to.equal(true);
+	});
+// end
 var inkblot = module.exports = function (options) {
 	this.options = _.defaults((options || {}), {
 		// Inkblot Defaults
 		// ----------------
+		autoReplace: true,
+		autoRemove: false,
+
+		createJSON: false,
+
+		enablePrompts: false,
+
+		silent: false,
+
 		comment: '//',
 		out: './test'
 
@@ -51,9 +69,35 @@ _.extend(inkblot.prototype, require('./utils/scaffold.js'));
 _.extend(inkblot.prototype, require('./utils/splice.js'));
 _.extend(inkblot.prototype, require('./utils/generate.js'));
 
+// describe log
+
+	it('should output nothing if the \'silent\' option is passed', function () {});
+
+// end
+
 // describe compile
-	it('should fail if passed a path', function (done) {
-		compile('/some/path.js', done);
+	it('should fail if passed a path', function () {
+		expect(function () {
+			
+			compile('/some/path.js', function(err) {
+				if (err) {
+					throw err;
+				}
+			});
+
+		}).to.throw(Error);
+	});
+
+	it('should fail if passed a Buffer', function () {
+		expect(function () {
+			
+			compile(new Buffer('Hello, world!'), function(err) {
+				if (err) {
+					throw err;
+				}
+			});
+
+		}).to.throw(Error);
 	});
 // end
 
@@ -65,6 +109,9 @@ _.extend(inkblot.prototype, {
 	// ------------
 	// Helper function to pretty-print to the console.
 	log: function (message) {
+		if (this.options.silent) {
+			return this;
+		}
 		var start, end;
 		var ibLog = '['+chalk.green('inkblot')+']';
 		var args = Array.prototype.slice.call(arguments);

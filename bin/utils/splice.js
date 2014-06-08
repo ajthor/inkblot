@@ -134,7 +134,7 @@ var spliceObject = function (file, data, obj, done) {
 
 		function (err) {
 			if (err) {
-				this.log(err);
+				done(err);
 			}
 
 			done(null, file, data, obj);
@@ -149,56 +149,57 @@ var spliceObject = function (file, data, obj, done) {
 var writeJSON = function (file, data, obj, callback) {
 	var filePath = path.join('./test/', file.base + '.json');
 
-	inquirer.prompt({
-		type: 'confirm',
-		name: 'overwrite',
-		message: 'Do you want to create JSON file ' + filePath + '?',
-		default: false
-	}, function (answers) {
-		if (answers.overwrite === true) {
-			fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
-				if (err) {
-					this.log(err);
-				}
-				else {
-					this.log('create:   ', '\'' + filePath + '\'');
-				}
+	if (this.options.createJson) {
+		fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+			if (err) {
+				this.log(err);
+			}
+			else {
+				this.log('create:   ', '\'' + filePath + '\'');
+			}
 
-				callback(null, file, data, obj);
-			}.bind(this));
-		}
-		else {
 			callback(null, file, data, obj);
-		}
-	}.bind(this));
+		}.bind(this));
+	}
 };
 
-// writeOriginal Function
-// ---------------------
+// cleanOriginal Function
+// ----------------------
 // Saves the cleaned file back to the original location.
-var writeOriginal = function (file, data, obj, callback) {
-	inquirer.prompt({
-		type: 'confirm',
-		name: 'overwrite',
-		message: 'Do you want to remove inline tests from ' + file.base + '?',
-		default: false
-	}, function (answers) {
-		if (answers.overwrite === true) {
-			fs.writeFile(file.path, data, function (err) {
-				if (err) {
-					this.log(err);
+var cleanOriginal = function (file, data, obj, callback) {
+	var save = (function () {
+		fs.writeFile(file.path, data, function (err) {
+			if (err) {
+				this.log(err);
+			}
+			else {
+				this.log('clean:    ', '\'' + base + '\'');
+			}
+
+			callback(null, file, data, obj);
+		}.bind(this));
+	});
+
+	if (this.options.autoRemove) {
+		save();
+	}
+	else {
+		if (this.options.enablePrompts) {
+			inquirer.prompt({
+				type: 'confirm',
+				name: 'overwrite',
+				message: 'Do you want to remove inline tests from ' + file.base + '?',
+				default: false
+			}, function (answers) {
+				if (answers.overwrite === true) {
+					save();
 				}
 				else {
-					this.log('clean:    ', '\'' + base + '\'');
+					callback(null, file, data, obj);
 				}
-
-				callback(null, file, data, obj);
 			}.bind(this));
 		}
-		else {
-			callback(null, file, data, obj);
-		}
-	}.bind(this));
+	}
 };
 
 // splice Function (async)
@@ -221,9 +222,9 @@ exports.splice = function (file, obj, done) {
 
 		spliceObject,
 
-		// writeJSON,
+		writeJSON.bind(this),
 
-		// writeOriginal,
+		cleanOriginal.bind(this),
 
 		// Return just the object as the result of the waterfall.
 		function (file, data, obj, callback) {
@@ -233,12 +234,12 @@ exports.splice = function (file, obj, done) {
 	],
 	function (err, result) {
 		if (err) {
-			done(err);
+			this.log(err);
 		}
 		else {
 			done(null, file, result);
 		}
-	});
+	}.bind(this));
 
 	
 };

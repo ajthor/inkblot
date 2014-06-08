@@ -177,19 +177,29 @@ exports.spliceTests = function (obj, stream, callback) {
 
 					if (diffBlocks(block, result)) {
 
-						inquirer.prompt([{
-							type: 'confirm',
-							name: 'replace',
-							message: 'TEST: \'' + item.description + '\' has changed. Replace it?',
-							default: true
-						}], function (answer) {
+						if (!this.options.autoReplace) {
+							if (this.options.enablePrompts) {
+								inquirer.prompt([{
+									type: 'confirm',
+									name: 'replace',
+									message: 'TEST: \'' + item.description + '\' has changed. Replace it?',
+									default: true
+								}], function (answer) {
 
-							if (answer.replace) {
-								stream = stream.replace(block, result.trim());
+									if (answer.replace) {
+										stream = stream.replace(block, result.trim());
+									}
+
+									next(null);
+								});
 							}
-
+							else {
+								next(null);
+							}
+						else {
+							stream = stream.replace(block, result.trim());
 							next(null);
-						});
+						}
 
 					}
 					else {

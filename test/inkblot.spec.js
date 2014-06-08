@@ -75,6 +75,7 @@ describe('exported object', function() {
                 it('should exist', function() {
                     expect(log).to.exist;
                 });
+                it('should output nothing if the \'silent\' option is passed', function() {});
 
             });
 
@@ -96,8 +97,27 @@ describe('exported object', function() {
                     expect(compile).to.exist;
                 });
 
-                it('should fail if passed a path', function(done) {
-                    compile('/some/path.js', done);
+                it('should fail if passed a path', function() {
+                    expect(function() {
+
+                        compile('/some/path.js', function(err) {
+                            if (err) {
+                                throw err;
+                            }
+                        });
+
+                    }).to.throw(Error);
+                });
+                it('should fail if passed a Buffer', function() {
+                    expect(function() {
+
+                        compile(new Buffer('Hello, world!'), function(err) {
+                            if (err) {
+                                throw err;
+                            }
+                        });
+
+                    }).to.throw(Error);
                 });
 
             });

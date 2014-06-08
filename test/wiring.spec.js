@@ -29,6 +29,14 @@ describe('exported object', function() {
             it('should exist', function() {
                 expect(getInnerBlock).to.exist;
             });
+            it('should return a string', function() {
+                var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
+                var result = getInnerBlock(0, str);
+
+                expect(result).to.exist;
+                expect(result).to.be.a('string');
+                expect(result).to.equal('console.log(\'Hello\');');
+            });
 
         });
 
@@ -38,6 +46,14 @@ describe('exported object', function() {
 
             it('should exist', function() {
                 expect(getOuterBlock).to.exist;
+            });
+            it('should return a string', function() {
+                var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
+                var result = getOuterBlock(0, str);
+
+                expect(result).to.exist;
+                expect(result).to.be.a('string');
+                expect(result).to.equal(str);
             });
 
         });
