@@ -161,6 +161,9 @@ var writeJSON = function (file, data, obj, callback) {
 			callback(null, file, data, obj);
 		}.bind(this));
 	}
+	else {
+		callback(null, file, data, obj);
+	}
 };
 
 // cleanOriginal Function
@@ -199,6 +202,9 @@ var cleanOriginal = function (file, data, obj, callback) {
 				}
 			}.bind(this));
 		}
+		else {
+			callback(null, file, data, obj);
+		}
 	}
 };
 
@@ -235,6 +241,7 @@ exports.splice = function (file, obj, done) {
 	function (err, result) {
 		if (err) {
 			this.log(err);
+			done(null, file, obj);
 		}
 		else {
 			done(null, file, result);

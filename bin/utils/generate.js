@@ -65,7 +65,7 @@ var generateSpec = function (obj, done) {
 						callback(null, item.children);
 					},
 
-					generateSpec
+					generateSpec.bind(this)
 				], 
 				function (err, result) {
 					if (err) {
@@ -166,7 +166,7 @@ exports.spliceTests = function (obj, stream, callback) {
 						callback(null, [item]);
 					},
 
-					generateSpec
+					generateSpec.bind(this)
 				],
 				function (err, result) {
 					if (err) {
@@ -196,6 +196,7 @@ exports.spliceTests = function (obj, stream, callback) {
 							else {
 								next(null);
 							}
+						}
 						else {
 							stream = stream.replace(block, result.trim());
 							next(null);
@@ -220,7 +221,7 @@ exports.spliceTests = function (obj, stream, callback) {
 					callback(null, [item]);
 				},
 
-				generateSpec
+				generateSpec.bind(this)
 			],
 			function (err, result) {
 				if (err) {
