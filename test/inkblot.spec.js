@@ -76,6 +76,8 @@ describe('exported object', function() {
                     expect(log).to.exist;
                 });
 
+                it('should output nothing if the \'silent\' option is passed', function() {});
+
             });
 
             describe('run', function() {
@@ -96,12 +98,26 @@ describe('exported object', function() {
                     expect(compile).to.exist;
                 });
 
-                it('should fail if passed a path', function(done) {
-                    compile('/some/path.js', done);
-                });
-
             });
 
+        });
+
+        it('should have default options', function() {
+            var instance = new inkblotJs({});
+
+            expect(instance.options).to.exist;
+            expect(instance.options.autoReplace).to.equal(true);
+            expect(instance.options.autoRemove).to.equal(false);
+            expect(instance.options.enablePrompts).to.equal(false);
+            expect(instance.options.silent).to.equal(false);
+        });
+
+        it('should accept options as arguments', function() {
+            var instance = new inkblotJs({
+                silent: true
+            });
+
+            expect(instance.options.silent).to.equal(true);
         });
 
     });

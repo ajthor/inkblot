@@ -65,7 +65,7 @@ var generateSpec = function (obj, done) {
 						callback(null, item.children);
 					},
 
-					generateSpec
+					generateSpec.bind(this)
 				], 
 				function (err, result) {
 					if (err) {
@@ -166,7 +166,7 @@ exports.spliceTests = function (obj, stream, callback) {
 						callback(null, [item]);
 					},
 
-					generateSpec
+					generateSpec.bind(this)
 				],
 				function (err, result) {
 					if (err) {
@@ -177,19 +177,30 @@ exports.spliceTests = function (obj, stream, callback) {
 
 					if (diffBlocks(block, result)) {
 
-						inquirer.prompt([{
-							type: 'confirm',
-							name: 'replace',
-							message: 'TEST: \'' + item.description + '\' has changed. Replace it?',
-							default: true
-						}], function (answer) {
+						if (!this.options.autoReplace) {
+							if (this.options.enablePrompts) {
+								inquirer.prompt([{
+									type: 'confirm',
+									name: 'replace',
+									message: 'TEST: \'' + item.description + '\' has changed. Replace it?',
+									default: true
+								}], function (answer) {
 
-							if (answer.replace) {
-								stream = stream.replace(block, result.trim());
+									if (answer.replace) {
+										stream = stream.replace(block, result.trim());
+									}
+
+									next(null);
+								});
 							}
-
+							else {
+								next(null);
+							}
+						}
+						else {
+							stream = stream.replace(block, result.trim());
 							next(null);
-						});
+						}
 
 					}
 					else {
@@ -210,7 +221,7 @@ exports.spliceTests = function (obj, stream, callback) {
 					callback(null, [item]);
 				},
 
-				generateSpec
+				generateSpec.bind(this)
 			],
 			function (err, result) {
 				if (err) {

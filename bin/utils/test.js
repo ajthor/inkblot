@@ -7,6 +7,11 @@ var rxCurly = /\{([^}]+)\}/g;
 
 // Test Object
 // ===========
+// describe testJS function
+	it('should have default options', function () {
+
+	});
+// end
 var test = module.exports = function (options, children) {
 	_.defaults(this, options, {
 		template: 'describe',
