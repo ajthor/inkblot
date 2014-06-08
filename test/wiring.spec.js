@@ -1,6 +1,8 @@
 /* global describe, it, beforeEach, afterEach, before, after */
 /* global expect, should, assert, require */
 
+'use strict';
+
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
@@ -29,6 +31,7 @@ describe('exported object', function() {
             it('should exist', function() {
                 expect(getInnerBlock).to.exist;
             });
+
             it('should return a string', function() {
                 var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
                 var result = getInnerBlock(0, str);
@@ -47,6 +50,7 @@ describe('exported object', function() {
             it('should exist', function() {
                 expect(getOuterBlock).to.exist;
             });
+
             it('should return a string', function() {
                 var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
                 var result = getOuterBlock(0, str);
