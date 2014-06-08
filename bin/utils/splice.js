@@ -46,7 +46,7 @@ var searchObject = function (needle, haystack) {
 // or the empty array passed if the module could not be loaded, 
 // splice the code in the source file into unit test objects and put 
 // them into the scaffolding object where they belong.
-var spliceObject = function (file, data, obj, done) {
+exports.spliceObject = function (file, data, obj, done) {
 	var match;
 
 	// Regular Expressions
@@ -130,7 +130,7 @@ var spliceObject = function (file, data, obj, done) {
 
 			callback(null);
 
-		},
+		}.bind(this),
 
 		function (err) {
 			if (err) {
@@ -142,15 +142,15 @@ var spliceObject = function (file, data, obj, done) {
 	);
 };
 
-var saveFile = function (file, data, callback) {
+exports.saveFile = function (file, data, callback) {
 	fs.writeFile(file.path, data, function (err) {
 		if (err) {
-			callback(err);
+			return callback(err);
 		}
-		else {
-			this.log('save: ', '\'' + base + '\'');
-			callback(null);
-		}
+
+		this.log('save: ', '\'' + file.name + '\'');
+		callback(null);
+
 	}.bind(this));
 };
 
@@ -158,34 +158,36 @@ var saveFile = function (file, data, callback) {
 // ------------------
 // Mostly a developer function to output the entire object created by 
 // inkblot from scaffolding the object and parsing the comments.
-var writeJSON = function (file, data, obj, done) {
+exports.writeJSON = function (file, data, obj, done) {
 	var filePath = path.join('./test/', file.base + '.json');
 
-	if (this.options.createJson) {
-		saveFile(file, data, function (err) {
+	if (this.options.createJSON) {
+		fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
 			if (err) {
 				this.log(err);
 			}
-
-			done(null, file, data, obj);
+			else {
+				this.log('save: ', '\'' + filePath + '\'');
+				done(null, file, data, obj);
+			}
 		}.bind(this));
 	}
-	else {
-		done(null, file, data, obj);
-	}
+
+	done(null, file, data, obj);
+
 };
 
 // cleanOriginal Function
 // ----------------------
 // Saves the cleaned file back to the original location.
-var cleanOriginal = function (file, data, obj, callback) {
+exports.cleanOriginal = function (file, data, obj, callback) {
 	if (this.options.autoRemove) {
-		saveFile(file, data, function (err) {
+		this.saveFile(file, data, function (err) {
 			if (err) {
 				this.log(err);
 			}
 
-			done(null, file, data, obj);
+			callback(null, file, data, obj);
 		}.bind(this));
 	}
 	else {
@@ -197,22 +199,21 @@ var cleanOriginal = function (file, data, obj, callback) {
 				default: false
 			}, function (answers) {
 				if (answers.overwrite === true) {
-					saveFile(file, data, function (err) {
+					this.saveFile(file, data, function (err) {
 						if (err) {
 							this.log(err);
 						}
 
-						done(null, file, data, obj);
+						callback(null, file, data, obj);
 					}.bind(this));
 				}
-				else {
-					callback(null, file, data, obj);
-				}
+
+				callback(null, file, data, obj);
+
 			}.bind(this));
 		}
-		else {
-			callback(null, file, data, obj);
-		}
+
+		callback(null, file, data, obj);
 	}
 };
 
@@ -221,8 +222,6 @@ var cleanOriginal = function (file, data, obj, callback) {
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
 exports.splice = function (file, obj, done) {
-	this.log('..splicing');
-
 	async.waterfall([
 		function (callback) {
 			var data = file._contents.toString('utf8');
@@ -232,13 +231,13 @@ exports.splice = function (file, obj, done) {
 			}
 
 			callback(null, file, data, obj);
-		},
+		}.bind(this),
 
-		spliceObject,
+		this.spliceObject.bind(this),
 
-		writeJSON.bind(this),
+		this.writeJSON.bind(this),
 
-		cleanOriginal.bind(this),
+		this.cleanOriginal.bind(this),
 
 		// Return just the object as the result of the waterfall.
 		function (file, data, obj, callback) {
@@ -249,11 +248,10 @@ exports.splice = function (file, obj, done) {
 	function (err, result) {
 		if (err) {
 			this.log(err);
-			done(null, file, obj);
+			return done(null, file, obj);
 		}
-		else {
-			done(null, file, result);
-		}
+
+		done(null, file, result);
 	}.bind(this));
 
 	

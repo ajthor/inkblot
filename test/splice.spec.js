@@ -33,6 +33,42 @@ describe('exported object', function() {
             });
 
         });
+        describe('spliceObject function', function() {
+
+            var spliceObject = spliceJs.spliceObject;
+
+            it('should exist', function() {
+                expect(spliceObject).to.exist;
+            });
+
+        });
+        describe('saveFile function', function() {
+
+            var saveFile = spliceJs.saveFile;
+
+            it('should exist', function() {
+                expect(saveFile).to.exist;
+            });
+
+        });
+        describe('writeJSON function', function() {
+
+            var writeJSON = spliceJs.writeJSON;
+
+            it('should exist', function() {
+                expect(writeJSON).to.exist;
+            });
+
+        });
+        describe('cleanOriginal function', function() {
+
+            var cleanOriginal = spliceJs.cleanOriginal;
+
+            it('should exist', function() {
+                expect(cleanOriginal).to.exist;
+            });
+
+        });
 
     });
 });

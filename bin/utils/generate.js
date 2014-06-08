@@ -39,7 +39,7 @@ var loadTemplate = async.memoize(function (template, callback) {
 // Generates the actual text which will go inside the spec file. 
 // It loads the templates from file and populates them with 
 // values from each item in the object passed to it.
-var generateSpec = function (obj, done) {
+var generateSpec = function (file, obj, done) {
 	var stream = '';
 
 	if (!Array.isArray(obj)) {
@@ -67,7 +67,7 @@ var generateSpec = function (obj, done) {
 				// recursively call generate on the object.
 				async.waterfall([
 					function (callback) {
-						callback(null, item.children);
+						callback(null, file, item.children);
 					},
 
 					generateSpec.bind(this)
@@ -89,14 +89,16 @@ var generateSpec = function (obj, done) {
 
 			}.bind(this));
 
-		}, 
-		function (err) {
-			if (err) {
-				this.log(err);
-			}
-			done(null, stream);
 		}.bind(this));
-	}
+
+	}.bind(this), 
+	function (err) {
+		if (err) {
+			this.log(err);
+		}
+		done(null, stream);
+	}.bind(this));
+	
 };
 
 // trimWhitespace Function
@@ -126,7 +128,7 @@ var diffBlocks = function (block1, block2) {
 // where the current tests are going to go. Splice them into the 
 // blocks as necessary to avoid overwriting any custom 
 // user-defined tests.
-exports.spliceTests = function (obj, stream, callback) {
+exports.spliceTests = function (file, obj, stream, callback) {
 	var block = '';
 	var index;
 
@@ -144,7 +146,7 @@ exports.spliceTests = function (obj, stream, callback) {
 			if (item.children.length) {
 				async.waterfall([
 					function (callback) {
-						callback(null, item.children, block);
+						callback(null, file, item.children, block);
 					},
 
 					this.spliceTests.bind(this)
@@ -168,7 +170,7 @@ exports.spliceTests = function (obj, stream, callback) {
 			else {
 				async.waterfall([
 					function (callback) {
-						callback(null, [item]);
+						callback(null, file, [item]);
 					},
 
 					generateSpec.bind(this)
@@ -223,7 +225,7 @@ exports.spliceTests = function (obj, stream, callback) {
 		else {
 			async.waterfall([
 				function (callback) {
-					callback(null, [item]);
+					callback(null, file, [item]);
 				},
 
 				generateSpec.bind(this)
@@ -232,7 +234,7 @@ exports.spliceTests = function (obj, stream, callback) {
 				if (err) {
 					this.log(err);
 				}
-				stream += result.trim();
+				stream += result.trim() + '\n';
 				next(null);
 			}.bind(this));
 		}
@@ -250,7 +252,7 @@ exports.spliceTests = function (obj, stream, callback) {
 // generate Function (async)
 // -------------------------
 exports.generate = function (file, obj, callback) {
-	this.log('..generating');
+	var specExists;
 
 	async.waterfall([
 		// loadSpecFile
@@ -260,15 +262,17 @@ exports.generate = function (file, obj, callback) {
 		function loadSpecFile(callback) {
 			fs.exists(file.spec, function (exists) {
 				if (exists) {
+					specExists = true;
 					fs.readFile(file.spec, 'utf8', function (err, data) {
 						if (err) {
 							this.log(err);
 						}
-						callback(null, obj, data);
+						callback(null, file, obj, data);
 					});
 				}
 				else {
-					callback(null, obj, '');
+					specExists = false;
+					callback(null, file, obj, '');
 				}
 			}.bind(this));
 		}.bind(this),
@@ -288,7 +292,7 @@ exports.generate = function (file, obj, callback) {
 			this.log(err);
 		}
 
-		if (result.indexOf('require(\'chai\')') === -1) {
+		if (!specExists) {
 			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
 				if (err) {
 					this.log(err);
