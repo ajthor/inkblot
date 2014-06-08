@@ -33,16 +33,6 @@ var findMatchingBrace = function (start, block) {
 // getInnerBlock Function
 // ----------------------
 // Retrieves the block of code defined inside the block.
-// describe getInnerBlock function
-	it('should return a string', function () {
-		var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
-		var result = getInnerBlock(0, str);
-
-		expect(result).to.exist;
-		expect(result).to.be.a('string');
-		expect(result).to.equal('console.log(\'Hello\');');
-	});
-// end
 exports.getInnerBlock = function (index, block) {
 	var end, start = block.indexOf('{', index) + 1;
 
@@ -54,16 +44,6 @@ exports.getInnerBlock = function (index, block) {
 // getOuterBlock Function
 // ----------------------
 // Retreives the whole block, including the wrapper function.
-// describe getOuterBlock function
-	it('should return a string', function () {
-		var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
-		var result = getOuterBlock(0, str);
-
-		expect(result).to.exist;
-		expect(result).to.be.a('string');
-		expect(result).to.equal(str);
-	});
-// end
 exports.getOuterBlock = function (index, block) {
 	var end, start;
 	var i;

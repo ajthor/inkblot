@@ -33,6 +33,8 @@ var async = require('async');
 
 var chalk = require('chalk');
 
+var languages = require('../lib/languages.json');
+
 var beautify = require('js-beautify').js_beautify;
 
 // Inkblot Object
@@ -52,10 +54,12 @@ var beautify = require('js-beautify').js_beautify;
 
 	it('should accept options as arguments', function () {
 		var instance = new inkblotJs({
-			silent: true
+			silent: true,
+			foo: "bar"
 		});
 
 		expect(instance.options.silent).to.equal(true);
+		expect(instance.options.foo).to.equal("bar");
 	});
 // end
 var inkblot = module.exports = function (options) {
@@ -71,7 +75,6 @@ var inkblot = module.exports = function (options) {
 
 		silent: false,
 
-		comment: '//',
 		out: './test'
 
 	}, this.options);
@@ -81,37 +84,7 @@ _.extend(inkblot.prototype, require('./utils/scaffold.js'));
 _.extend(inkblot.prototype, require('./utils/splice.js'));
 _.extend(inkblot.prototype, require('./utils/generate.js'));
 
-// describe log
 
-	it('should output nothing if the \'silent\' option is passed', function () {});
-
-// end
-
-// describe compile
-	it('should fail if passed a path', function () {
-		expect(function () {
-			
-			compile('/some/path.js', function(err) {
-				if (err) {
-					throw err;
-				}
-			});
-
-		}).to.throw(Error);
-	});
-
-	it('should fail if passed a Buffer', function () {
-		expect(function () {
-			
-			compile(new Buffer('Hello, world!'), function(err) {
-				if (err) {
-					throw err;
-				}
-			});
-
-		}).to.throw(Error);
-	});
-// end
 
 // Inkblot Prototype
 // -----------------
@@ -149,7 +122,6 @@ _.extend(inkblot.prototype, {
 			globs = [globs];
 		}
 		async.eachSeries(globs, function (item, next) {
-			this.log('load', '\'' + item + '\'');
 			item = path.resolve(item);
 
 			// Make sure the file being loaded is not a '.spec'. 
@@ -158,9 +130,6 @@ _.extend(inkblot.prototype, {
 				next(new Error('Cannot run inkblot on a spec file: ' + item));
 			}
 
-			// load file
-			// create file object
-			// pass to compile function
 			fs.readFile(item, function (err, data) {
 				if (err) {
 					next(err);
@@ -200,7 +169,7 @@ _.extend(inkblot.prototype, {
 			if (err) {
 				throw err;
 			}
-			this.log('Done.');
+			this.log(chalk.green('DONE'));
 		}.bind(this));
 	},
 
@@ -212,9 +181,33 @@ _.extend(inkblot.prototype, {
 	// into a spec, and writes them to disk. If there is a problem, 
 	// it will not write the file.
 	compile: function (file, done) {
+		var startTime;
+
 		async.waterfall([
-			// Resolve the file name.
-			function fileName(callback) {
+			function greet(callback) {
+				this.log('parsing', '\'' + file.name + '\'');
+				startTime = new Date().getTime();
+				callback(null);
+			}.bind(this),
+
+			function resolveLanguage(callback) {
+				// Figure out which language this file is based on 
+				// the extension. If there is an entry in the 
+				// `languages.json` file, then load the symbol lookup
+				// info for this file.
+				var ext;
+				for (ext in languages) {
+					if (file.ext === ext) {
+						file.type = languages[ext].name;
+						file.symbol = languages[ext].symbol;
+					}
+				}
+				if (typeof file.symbol === 'undefined' || file.symbol === '') {
+					return callback(new Error('Cannot run inkblot on file: ' + file.name));
+				}
+
+				this.log('file type resolved to', file.type);
+
 				callback(null, file);
 			}.bind(this),
 
@@ -241,7 +234,7 @@ _.extend(inkblot.prototype, {
 						done(err);
 					}
 					else {
-						this.log('compiled:', '\'' + file.spec + '\'');
+						this.log(chalk.green('compiled'), 'in', chalk.magenta(new Date().getTime() - startTime, 'ms'));
 						done(null);
 					}
 				}.bind(this));

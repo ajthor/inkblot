@@ -46,12 +46,12 @@ var searchObject = function (needle, haystack) {
 // or the empty array passed if the module could not be loaded, 
 // splice the code in the source file into unit test objects and put 
 // them into the scaffolding object where they belong.
-var spliceObject = function (file, data, obj, done) {
+exports.spliceObject = function (file, data, obj, done) {
 	var match;
 
 	// Regular Expressions
 	// -------------------
-	var rxDescribe = new RegExp('\s*// (describe (.+))\n', 'g');
+	var rxDescribe = new RegExp('\s*'+file.symbol+' (describe (.+))\n', 'g');
 	var rxIt       = new RegExp('it\\((?:\'|")(.*)(?:\'|")', 'g');
 	// var rxEnd      = new RegExp(this.options.comment + ' end', 'g');
 
@@ -73,7 +73,7 @@ var spliceObject = function (file, data, obj, done) {
 			// as a new child test.
 			ref = searchObject(match[2], obj);
 
-			block = data.slice(match.index + match[0].length, data.indexOf('// end', match.index));
+			block = data.slice(match.index + match[0].length, data.indexOf(file.symbol+' end', match.index));
 
 			// If nothing is found, we can assume that the test is 
 			// something new that we aren't expecting to be tested.
@@ -125,12 +125,12 @@ var spliceObject = function (file, data, obj, done) {
 			}
 
 			// Remove the block once the tests have been pulled out of it
-			block = data.slice(match.index, data.indexOf('// end', match.index) + 7);
+			block = data.slice(match.index, data.indexOf(file.symbol+' end', match.index) + 7);
 			data = data.replace(block, '');
 
 			callback(null);
 
-		},
+		}.bind(this),
 
 		function (err) {
 			if (err) {
@@ -142,49 +142,53 @@ var spliceObject = function (file, data, obj, done) {
 	);
 };
 
+exports.saveFile = function (file, data, callback) {
+	fs.writeFile(file.path, data, function (err) {
+		if (err) {
+			return callback(err);
+		}
+
+		this.log('save: ', '\'' + file.name + '\'');
+		callback(null);
+
+	}.bind(this));
+};
+
 // writeJSON Function
 // ------------------
 // Mostly a developer function to output the entire object created by 
 // inkblot from scaffolding the object and parsing the comments.
-var writeJSON = function (file, data, obj, callback) {
+exports.writeJSON = function (file, data, obj, done) {
 	var filePath = path.join('./test/', file.base + '.json');
 
-	if (this.options.createJson) {
+	if (this.options.createJSON) {
 		fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
 			if (err) {
 				this.log(err);
 			}
 			else {
-				this.log('create:   ', '\'' + filePath + '\'');
+				this.log('save: ', '\'' + filePath + '\'');
+				done(null, file, data, obj);
 			}
-
-			callback(null, file, data, obj);
 		}.bind(this));
 	}
-	else {
-		callback(null, file, data, obj);
-	}
+
+	done(null, file, data, obj);
+
 };
 
 // cleanOriginal Function
 // ----------------------
 // Saves the cleaned file back to the original location.
-var cleanOriginal = function (file, data, obj, callback) {
-	var save = (function () {
-		fs.writeFile(file.path, data, function (err) {
+exports.cleanOriginal = function (file, data, obj, callback) {
+	if (this.options.autoRemove) {
+		this.saveFile(file, data, function (err) {
 			if (err) {
 				this.log(err);
-			}
-			else {
-				this.log('clean:    ', '\'' + base + '\'');
 			}
 
 			callback(null, file, data, obj);
 		}.bind(this));
-	});
-
-	if (this.options.autoRemove) {
-		save();
 	}
 	else {
 		if (this.options.enablePrompts) {
@@ -195,16 +199,21 @@ var cleanOriginal = function (file, data, obj, callback) {
 				default: false
 			}, function (answers) {
 				if (answers.overwrite === true) {
-					save();
+					this.saveFile(file, data, function (err) {
+						if (err) {
+							this.log(err);
+						}
+
+						callback(null, file, data, obj);
+					}.bind(this));
 				}
-				else {
-					callback(null, file, data, obj);
-				}
+
+				callback(null, file, data, obj);
+
 			}.bind(this));
 		}
-		else {
-			callback(null, file, data, obj);
-		}
+
+		callback(null, file, data, obj);
 	}
 };
 
@@ -213,24 +222,22 @@ var cleanOriginal = function (file, data, obj, callback) {
 // Accepts a file name and an object to splice the file into and 
 // joins the two.
 exports.splice = function (file, obj, done) {
-	this.log('..splicing');
-
 	async.waterfall([
 		function (callback) {
 			var data = file._contents.toString('utf8');
 
-			if (data && (data.indexOf('// describe') === -1)) {
-				callback(new Error('No inkblot comments in file: ' + file.name));
+			if (data && (data.indexOf(file.symbol+' describe') === -1)) {
+				return callback('No inkblot comments in file: ' + file.name);
 			}
 
 			callback(null, file, data, obj);
-		},
+		}.bind(this),
 
-		spliceObject,
+		this.spliceObject.bind(this),
 
-		writeJSON.bind(this),
+		this.writeJSON.bind(this),
 
-		cleanOriginal.bind(this),
+		this.cleanOriginal.bind(this),
 
 		// Return just the object as the result of the waterfall.
 		function (file, data, obj, callback) {
@@ -241,11 +248,10 @@ exports.splice = function (file, obj, done) {
 	function (err, result) {
 		if (err) {
 			this.log(err);
-			done(null, file, obj);
+			return done(null, file, obj);
 		}
-		else {
-			done(null, file, result);
-		}
+
+		done(null, file, result);
 	}.bind(this));
 
 	
