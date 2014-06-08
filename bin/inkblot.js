@@ -115,7 +115,7 @@ _.extend(inkblot.prototype, {
 			return this;
 		}
 		var start, end;
-		var ibLog = '['+chalk.green('inkblot')+']';
+		var ibLog = '['+chalk.grey('inkblot')+']';
 		var args = Array.prototype.slice.call(arguments);
 		args.unshift(ibLog);
 
