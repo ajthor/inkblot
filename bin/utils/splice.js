@@ -142,27 +142,36 @@ var spliceObject = function (file, data, obj, done) {
 	);
 };
 
+var saveFile = function (file, data, callback) {
+	fs.writeFile(file.path, data, function (err) {
+		if (err) {
+			callback(err);
+		}
+		else {
+			this.log('save: ', '\'' + base + '\'');
+			callback(null);
+		}
+	}.bind(this));
+};
+
 // writeJSON Function
 // ------------------
 // Mostly a developer function to output the entire object created by 
 // inkblot from scaffolding the object and parsing the comments.
-var writeJSON = function (file, data, obj, callback) {
+var writeJSON = function (file, data, obj, done) {
 	var filePath = path.join('./test/', file.base + '.json');
 
 	if (this.options.createJson) {
-		fs.writeFile(filePath, JSON.stringify(obj, null, 2), function (err) {
+		saveFile(file, data, function (err) {
 			if (err) {
 				this.log(err);
 			}
-			else {
-				this.log('create:   ', '\'' + filePath + '\'');
-			}
 
-			callback(null, file, data, obj);
+			done(null, file, data, obj);
 		}.bind(this));
 	}
 	else {
-		callback(null, file, data, obj);
+		done(null, file, data, obj);
 	}
 };
 
@@ -170,21 +179,14 @@ var writeJSON = function (file, data, obj, callback) {
 // ----------------------
 // Saves the cleaned file back to the original location.
 var cleanOriginal = function (file, data, obj, callback) {
-	var save = (function () {
-		fs.writeFile(file.path, data, function (err) {
+	if (this.options.autoRemove) {
+		saveFile(file, data, function (err) {
 			if (err) {
 				this.log(err);
 			}
-			else {
-				this.log('clean:    ', '\'' + base + '\'');
-			}
 
-			callback(null, file, data, obj);
+			done(null, file, data, obj);
 		}.bind(this));
-	});
-
-	if (this.options.autoRemove) {
-		save();
 	}
 	else {
 		if (this.options.enablePrompts) {
@@ -195,7 +197,13 @@ var cleanOriginal = function (file, data, obj, callback) {
 				default: false
 			}, function (answers) {
 				if (answers.overwrite === true) {
-					save();
+					saveFile(file, data, function (err) {
+						if (err) {
+							this.log(err);
+						}
+
+						done(null, file, data, obj);
+					}.bind(this));
 				}
 				else {
 					callback(null, file, data, obj);
