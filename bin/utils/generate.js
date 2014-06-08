@@ -43,12 +43,17 @@ var generateSpec = function (obj, done) {
 	var stream = '';
 
 	if (!Array.isArray(obj)) {
-		done(null, '');
+		return done(null, '');
 	}
-	else {
-		async.eachSeries(obj, function (item, next) {
-			var t;
-			var templateFile = path.resolve(path.join('../inkblot/lib/templates', item.template + '.js'));
+
+	async.eachSeries(obj, function (item, next) {
+		var t;
+		var templateFile = path.resolve(path.join(file.cwd, './test/templates', item.template + file.ext));
+
+		fs.exists(templateFile, function (exists) {
+			if (!exists) {
+				templateFile = path.resolve(path.join('../inkblot/lib/templates', item.template + '.jst'));
+			}
 
 			// Read the template and parse the object into the 
 			// template to create a test.
