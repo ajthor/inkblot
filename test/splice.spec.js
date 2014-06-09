@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/splice.js');
+    var exported = require('../bin/utils/splice.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
@@ -24,15 +24,6 @@ describe('exported object', function() {
             expect(spliceJs).to.exist;
         });
 
-        describe('splice function', function() {
-
-            var splice = spliceJs.splice;
-
-            it('should exist', function() {
-                expect(splice).to.exist;
-            });
-
-        });
         describe('spliceObject function', function() {
 
             var spliceObject = spliceJs.spliceObject;
@@ -42,6 +33,7 @@ describe('exported object', function() {
             });
 
         });
+
         describe('saveFile function', function() {
 
             var saveFile = spliceJs.saveFile;
@@ -51,6 +43,7 @@ describe('exported object', function() {
             });
 
         });
+
         describe('writeJSON function', function() {
 
             var writeJSON = spliceJs.writeJSON;
@@ -60,12 +53,23 @@ describe('exported object', function() {
             });
 
         });
+
         describe('cleanOriginal function', function() {
 
             var cleanOriginal = spliceJs.cleanOriginal;
 
             it('should exist', function() {
                 expect(cleanOriginal).to.exist;
+            });
+
+        });
+
+        describe('splice function', function() {
+
+            var splice = spliceJs.splice;
+
+            it('should exist', function() {
+                expect(splice).to.exist;
             });
 
         });

@@ -293,14 +293,14 @@ exports.generate = function (file, obj, callback) {
 		}
 
 		if (!specExists) {
-			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.js')), 'utf8', function (err, data) {
+			fs.readFile(path.resolve(path.join('../inkblot/lib/templates/spec.jst')), 'utf8', function (err, data) {
 				if (err) {
 					this.log(err);
 				}
 
 				result = _.template(data, {
 					name: obj[0].variables.name,
-					path: file.path,
+					path: path.relative(this.options.out, file.path),
 					code: result
 				});
 

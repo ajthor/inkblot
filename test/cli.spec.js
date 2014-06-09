@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('/Users/adam/Dropbox/inkblot/bin/cli.js');
+    var exported = require('../bin/cli.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
