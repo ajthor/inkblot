@@ -17,6 +17,7 @@ Then, install inkblot using NPM:
     npm install -g inkblot
 
 
+
 ------
 
 ## Usage
@@ -25,20 +26,19 @@ Once installed, simply call inkblot at the terminal using the format:
 
     inkblot <glob>
 
-Inline tests are parsed from comments beginning with `// describe <something>`.
+Inline tests are parsed from comments beginning with `// describe <something>`. Inkblot supports other languages as well (in a limited way), but *works best at the moment with languages which use curly braces and BDD testing frameworks* (C, JavaScript, Java). I hope to extend this functionality to indentation-based languages and TDD keywords (setup, suite, etc.) in the near future.
 
 The output directory can be changed by passing an option to the CLI.
 
     inkblot **/*.js --out="somedir"
 
-*I plan on extending this behavior in the near future with commander or minimist.*
 
 
 ------
 
 ### Comments
 
-The default search string is `// describe` until `// end`. 
+The default search string is `// describe` until `// end`. *If the language you are using does not use the double slash `//` comment notation, you can add the language to the `languages.json` file in the `lib` directory.*
 
 Example:
 ```javascript
@@ -49,11 +49,26 @@ Example:
 // end
 ```
 
-Everything inside the code block will be interpreted as a unit test which will be output to the `somefile.spec.js` file (or whatever extension you are using). __Currently, inkblot only recognizes `it` tests. This will be expanded in the near future.__
+Everything inside the code block will be interpreted as a unit test which will be output to the `somefile.spec.js` file (or whatever extension you are using). __Currently, inkblot only recognizes `it` tests.__
 
-The unit test code between the describe and end comments is parsed by the program and run through custom templates. In the near future, I hope to extend the program to search in the `test/templates` folder of the cwd for custom templates so that inkblot can be extended by the end-user rather than just having a strict library of unit tests.
+#### Custom Templates
 
-Sample:
+The unit test code between the describe and end comments is parsed by the program and run through custom templates. If you wish to create custom templates for your tests, inkblot searches through the `test/templates` directory for `template.<extension>` files.
+
+The default templates are:
+
+- `spec.jst`
+- `it.jst` 
+- `describe.jst` 
+- `beforeEach.jst`
+
+Roll your own templates using [underscore.js templating style](http://underscorejs.org/#template) and placing them in the `test/templates` directory with the extension of the files you are loading in. So, for example, if you are writing in C++, the file you load in, `dummy.cpp`, will prompt a search for `test/templates/spec.cpp` and so on.
+
+
+
+------
+
+### Sample:
 
 File: `somefile.js`
 ```javascript
@@ -67,20 +82,19 @@ var hello = module.exports = function hello(name) {
     return "Hello, " + name;
 };
 ```
-Will output:
 
-File: `test/somefile.spec.js`
+Output: `test/somefile.spec.js`
 ```javascript
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert,
     should = chai.should();
 
-var somefile = require('somefile.js');
+var exported = require('../somefile.js');
 
-describe('somefile', function() {
+describe('somefileJs', function() {
 
-    var name1;
+    var somefileJs = exported;
 
     it('should return a string', function() {
         expect(somefile()).to.be.a('string');
@@ -88,6 +102,7 @@ describe('somefile', function() {
 
 });
 ```
+
 
 
 ------

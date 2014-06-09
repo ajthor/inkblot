@@ -1,6 +1,6 @@
 {
   "name": "inkblot",
-  "version": "0.0.5",
+  "version": "0.2.0",
   "main": "bin/inkblot.js",
   "bin": {
     "inkblot": "bin/cli.js"

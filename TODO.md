@@ -17,8 +17,4 @@ This way, the user can define the behavior using the inkblot comments during the
 ## TODO
 
 - Add '-f' or '--force' option to completely redo the spec when run.
-- remove necessity of 'compile' command in CLI
-- add options object that passes through program
-- modify 'file' parameter to be an object with path, _contents, cwd, base properties
 - look into fs.openFile rather than readFile
-- make inkblot gulp-compatible.
