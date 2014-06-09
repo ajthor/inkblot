@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/scaffold.js');
+    var exported = require('../bin/utils/scaffold.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
