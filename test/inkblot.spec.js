@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('/Users/adam/Dropbox/inkblot/bin/inkblot.js');
+    var exported = require('../bin/inkblot.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
@@ -34,6 +34,46 @@ describe('exported object', function() {
 
                 it('should exist', function() {
                     expect(scaffold).to.exist;
+                });
+
+            });
+
+            describe('spliceObject', function() {
+
+                var spliceObject = inkblotJsProto.spliceObject;
+
+                it('should exist', function() {
+                    expect(spliceObject).to.exist;
+                });
+
+            });
+
+            describe('saveFile', function() {
+
+                var saveFile = inkblotJsProto.saveFile;
+
+                it('should exist', function() {
+                    expect(saveFile).to.exist;
+                });
+
+            });
+
+            describe('writeJSON', function() {
+
+                var writeJSON = inkblotJsProto.writeJSON;
+
+                it('should exist', function() {
+                    expect(writeJSON).to.exist;
+                });
+
+            });
+
+            describe('cleanOriginal', function() {
+
+                var cleanOriginal = inkblotJsProto.cleanOriginal;
+
+                it('should exist', function() {
+                    expect(cleanOriginal).to.exist;
                 });
 
             });
@@ -76,8 +116,6 @@ describe('exported object', function() {
                     expect(log).to.exist;
                 });
 
-                it('should output nothing if the \'silent\' option is passed', function() {});
-
             });
 
             describe('run', function() {
@@ -97,6 +135,7 @@ describe('exported object', function() {
                 it('should exist', function() {
                     expect(compile).to.exist;
                 });
+
                 it('should fail if passed a path', function() {
                     expect(function() {
 
@@ -108,6 +147,7 @@ describe('exported object', function() {
 
                     }).to.throw(Error);
                 });
+
                 it('should fail if passed a Buffer', function() {
                     expect(function() {
 
@@ -121,52 +161,6 @@ describe('exported object', function() {
                 });
 
             });
-            describe('spliceObject', function() {
-
-                var spliceObject = inkblotJsProto.spliceObject;
-
-                it('should exist', function() {
-                    expect(spliceObject).to.exist;
-                });
-
-            });
-            describe('saveFile', function() {
-
-                var saveFile = inkblotJsProto.saveFile;
-
-                it('should exist', function() {
-                    expect(saveFile).to.exist;
-                });
-
-            });
-            describe('writeJSON', function() {
-
-                var writeJSON = inkblotJsProto.writeJSON;
-
-                it('should exist', function() {
-                    expect(writeJSON).to.exist;
-                });
-
-            });
-            describe('cleanOriginal', function() {
-
-                var cleanOriginal = inkblotJsProto.cleanOriginal;
-
-                it('should exist', function() {
-                    expect(cleanOriginal).to.exist;
-                });
-
-            });
-            describe('error', function() {
-
-                var error = inkblotJsProto.error;
-
-                it('should exist', function() {
-                    expect(error).to.exist;
-                });
-
-            });
-
 
         });
 

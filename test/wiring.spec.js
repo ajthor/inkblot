@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('/Users/adam/Dropbox/inkblot/bin/utils/wiring.js');
+    var exported = require('../bin/utils/wiring.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
@@ -31,7 +31,7 @@ describe('exported object', function() {
             it('should exist', function() {
                 expect(getInnerBlock).to.exist;
             });
-
+            
             it('should return a string', function() {
                 var str = 'it(\'should do something\', function () {console.log(\'Hello\');});';
                 var result = getInnerBlock(0, str);
