@@ -119,8 +119,6 @@ var generateScaffolding = function (key, parent, obj) {
 // Scaffold Function (async)
 // -------------------------
 exports.scaffold = function (file, callback) {
-	this.log('..scaffolding');
-
 	async.waterfall([
 
 		// loadModule Function
@@ -130,9 +128,13 @@ exports.scaffold = function (file, callback) {
 		// scaffolding object. If it can't load the module, meaning 
 		// Node doesn't recognize it, then it returns an emty array.
 		function loadModule(callback) {
-			var loadedModule = null;
 			var obj = [];
 
+			if (file.type !== 'javascript' && file.type !== 'coffeescript') {
+				return callback(null, obj);
+			}
+
+			var loadedModule = null;
 			var key = file.name.replace(/\./g, '-');
 			// camelCase the string
 			key = key.replace(/[-_\s]+(.)?/g, function (match, c) {return c ? c.toUpperCase() : '';});
@@ -141,16 +143,16 @@ exports.scaffold = function (file, callback) {
 				loadedModule = require(file.path);
 				obj = generateScaffolding(key, '', loadedModule);
 			}
-			catch(e) {
-				this.log('WARN: cannot scaffold module', '\'' + file.name + '\'');
-				if (e) {
-					this.log('Error: ', e);
+			catch (err) {
+				this.log('Cannot scaffold module', '\'' + file.name + '\'');
+				if (err) {
+					this.log('Error: ', err);
 				}
 			}
 			finally {
 				callback(null, obj);
 			}
-		}
+		}.bind(this)
 
 	],
 	function(err, result) {
