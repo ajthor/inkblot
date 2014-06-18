@@ -11,7 +11,7 @@ var async = require('async');
 var util = require('util');
 var path = require('path');
 
-var inkblot = require('./inkblot.js');
+var inkblot = require('../lib/inkblot.js');
 
 // InkBlot Command-Line Tool
 // =========================
