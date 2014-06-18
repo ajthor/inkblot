@@ -43,7 +43,7 @@ describe('exported object', function() {
                 var spliceObject = inkblotJsProto.spliceObject;
 
                 it('should exist', function() {
-                    expect(spliceObject).to.exist;
+                    expect(splice).to.exist;
                 });
 
             });
@@ -168,9 +168,9 @@ describe('exported object', function() {
             var instance = new inkblotJs({});
 
             expect(instance.options).to.exist;
-            expect(instance.options.autoReplace).to.equal(true);
-            expect(instance.options.autoRemove).to.equal(false);
-            expect(instance.options.enablePrompts).to.equal(false);
+            expect(instance.options.autoReplace).to.equal(false);
+            expect(instance.options.autoRemove).to.equal(true);
+            expect(instance.options.enablePrompts).to.equal(true);
             expect(instance.options.silent).to.equal(false);
         });
 
