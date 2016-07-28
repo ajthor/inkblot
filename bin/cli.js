@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-
 'use strict';
 
-const fs = require('fs');
 const meow = require('meow');
-
 const inkblot = require('../lib/inkblot.js');
+
+global.test = () => {};
 
 // InkBlot Command-Line Tool
 // =========================
@@ -14,17 +13,36 @@ const usage = `
   Usage: inkblot <glob> [options]
 
   Options:
+    -h, --help                         Show this message.
     -i, --init                         Initialize the project with inkblot.
     -o <output>, --output="<output>"   Specify an output directory. Default is 'test'.
-
+    --dry                              Dry run. Will not create or modify any files.
 `;
+
+const defaultIgnores = [
+  '**/node_modules/**',
+  '**/bower_components/**',
+  'coverage/**',
+  '{tmp,temp}/**',
+  '**/*.min.js',
+  '**/bundle.js',
+  '**/gulp*',
+  'fixture{-*,}.{js,jsx}',
+  'fixture{s,}/**',
+  '**/test_*.js',
+  '{test,tests,spec,__tests__}/fixture{s,}/**',
+  'vendor/**',
+  'dist/**'
+];
 
 const cli = meow(usage, {
   alias: {
     o: 'output'
   },
   default: {
-    o: 'test'
+    o: 'test',
+    dry: false,
+    ignore: defaultIgnores
   }
 });
 
@@ -33,8 +51,7 @@ const options = cli.flags;
 
 // C:\> Run program
 if (options.init) {
-  const init = require('../lib/init.js');
-  init.setup(options);
+  inkblot.init(options);
 } else {
   inkblot.parseFiles(globs, options);
 }
