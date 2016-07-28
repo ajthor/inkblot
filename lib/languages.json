@@ -1,8 +1,0 @@
-{
-	".c":        { "name": "C",            "symbol": "//" },
-	".coffee":   { "name": "coffeescript", "symbol": "#"  },
-	".h":        { "name": "C",            "symbol": "//" },
-	".js":       { "name": "javascript",   "symbol": "//" },
-	".md":       { "name": "markdown",     "symbol": ""   },
-	".py":       { "name": "python",       "symbol": "#"  }
-}

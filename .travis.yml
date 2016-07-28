@@ -1,10 +1,15 @@
 language: node_js
 node_js:
-  - '0.10'
+  - '6'
+  - '5'
+  - '4'
+  - 'node'
+
 branches:
   except:
     -experimental
+
 notifications:
   email:
-    on_success: change
+    on_success: never
     on_failure: change

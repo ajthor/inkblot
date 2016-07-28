@@ -1,7 +1,11 @@
 {
   "name": "inkblot",
-  "version": "0.2.0",
-  "main": "bin/inkblot.js",
+  "version": "0.3.0",
+  "main": "bin/cli.js",
+  "scripts": {
+    "start": "inkblot",
+    "test": "gulp test"
+  },
   "bin": {
     "inkblot": "bin/cli.js"
   },
@@ -18,6 +22,7 @@
   "author": {
     "name": "ajthor"
   },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ajthor/inkblot.git"
@@ -26,37 +31,26 @@
     "type": "MIT"
   },
   "dependencies": {
-    "async": "^0.8.0",
-    "chalk": "^0.4.0",
-    "glob": "git://github.com/isaacs/node-glob",
-    "inquirer": "^0.5.1",
-    "js-beautify": "^1.5.1",
-    "minimist": "^0.1.0",
-    "underscore": "^1.6.0",
-    "when": "^3.2.1"
+    "bluebird": "^3.4.1",
+    "chalk": "^1.1.3",
+    "globby": "^6.0.0",
+    "lodash": "^4.14.0",
+    "log-update": "^1.0.2",
+    "meow": "^3.7.0",
+    "nconf": "^0.8.4"
   },
   "devDependencies": {
-    "chai": "^1.9.1",
-    "github": "^0.1.16",
-    "grunt": "^0.4.4",
-    "grunt-shell": "^0.7.0",
-    "gulp": "^3.7.0",
-    "gulp-cached": "0.0.3",
-    "gulp-docco": "0.0.4",
-    "gulp-git": "^0.4.1",
-    "gulp-inkblot": "git://github.com/ajthor/gulp-inkblot",
-    "gulp-jshint": "^1.6.2",
-    "gulp-mocha": "^0.4.1",
-    "gulp-remember": "^0.2.0",
-    "gulp-shell": "^0.2.4",
-    "gulp-util": "^2.2.14",
-    "mocha": "^1.20.0"
-  },
-  "scripts": {
-    "test": "mocha"
+    "gulp": "^3.9.1",
+    "gulp-ava": "^0.12.1",
+    "gulp-util": "^3.0.7",
+    "gulp-xo": "^0.12.0"
   },
   "directories": {
     "lib": "./lib",
     "bin": "./bin"
+  },
+  "xo": {
+    "esnext": true,
+    "space": 2
   }
 }
