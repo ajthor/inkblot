@@ -10,7 +10,7 @@ var chai = require('chai'),
 
 describe('exported object', function() {
 
-    var exported = require('../bin/utils/splice.js');
+    var exported = require('../lib/utils/splice.js');
 
     it('should not be undefined', function() {
         expect(exported).to.not.be.undefined;
