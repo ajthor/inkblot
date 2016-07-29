@@ -53,5 +53,5 @@ const options = cli.flags;
 if (options.init) {
   inkblot.init(options);
 } else {
-  inkblot.parseFiles(globs, options);
+  inkblot.mergeTests(globs, options);
 }

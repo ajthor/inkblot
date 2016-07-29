@@ -6,6 +6,6 @@ test('dummy', t => {
 
 // TEST
 test('dummy two', t => {
-  // For testing.
+  t.pass();
 });
 // END
