@@ -37,12 +37,13 @@ const defaultIgnores = [
 
 const cli = meow(usage, {
   alias: {
+    h: 'help',
     o: 'output'
   },
   default: {
-    o: 'test',
     dry: false,
-    ignore: defaultIgnores
+    ignore: defaultIgnores,
+    o: 'test'
   }
 });
 
