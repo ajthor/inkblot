@@ -1,6 +1,6 @@
 # inkblot :octopus:
 
-[![Build Status](https://travis-ci.org/ajthor/inkblot.svg?branch=master)](https://travis-ci.org/ajthor/inkblot) [![Code Climate](https://codeclimate.com/github/ajthor/inkblot.png)](https://codeclimate.com/github/ajthor/inkblot)
+[![Build Status](https://travis-ci.org/ajthor/inkblot.svg?branch=master)](https://travis-ci.org/ajthor/inkblot) [![Coverage Status](https://coveralls.io/repos/github/ajthor/inkblot/badge.svg?branch=master)](https://coveralls.io/github/ajthor/inkblot?branch=master) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 
 Inline unit test tool.
 
@@ -16,86 +16,86 @@ Then, install inkblot using NPM:
 
     npm install -g inkblot
 
-------
-
 ## Usage
 
 Once installed, simply call inkblot at the terminal using the format:
 
     inkblot <glob>
 
-Inline tests are parsed from comments beginning with `// TEST: <description>`. Inkblot supports other languages as well (in a limited way), but *works best at the moment with languages which use curly braces and BDD testing frameworks* (C, JavaScript, Java). I hope to extend this functionality to indentation-based languages and TDD keywords (setup, suite, etc.) in the near future.
+Inline tests are parsed from comments beginning with `// TEST {<identifier>}`. Inkblot supports other languages as well (in a limited way), but *works best at the moment with languages which use double-slash comment style* (C, JavaScript, etc). I hope to extend this functionality to other comment types in the future.
+
+Also, the tests are, by default, output into a file that uses the [AVA](https://github.com/avajs/ava) testing framework. If you don't already know about __AVA__, be sure to check it out. If the file doesn't already exist, it will create a file with `import test from 'ava';` at the beginning of the file.
 
 The output directory can be changed by passing an option to the CLI.
 
 ```
-inkblot **/*.js --out="<test directory>"
+inkblot **/*.js -o <test directory>
 ```
 
 ------
 
 ### Comments
 
-The default search string is `// TEST:` until `// END`. *If the language you are using does not use the double slash `//` comment notation, you can add the language to the `languages.json` file in the `lib` directory.*
+The default search string is `// TEST` until `// END`.
 
 Example:
 ```javascript
-// TEST: <Test description goes here>
+// TEST {<Test identifier goes here>}
 
     test code goes here
 
 // END
 ```
 
-This will output:
-```javascript
-  test('<Your description>', t => {
+Everything inside the code block will be interpreted as a block which will be output to the `test_somefile.js` file (or whatever extension you are using).
 
-    your test code
-
-  });
-```
-
-Everything inside the code block will be interpreted as a unit test which will be output to the `test_somefile.js` file (or whatever extension you are using).
-------
-
-### Sample:
+### Sample
 
 File: `somefile.js`
 ```javascript
-// describe somefile
-    it('should return a string', function() {
-        expect(somefile()).to.be.a('string');
-    });
-// end
+// TEST { import someFunction }
+import {someFunction} from 'somefile';
+// END
 
-var hello = module.exports = function hello(name) {
-    return "Hello, " + name;
+// TEST { someFunction }
+test.beforeEach(t => {
+  t.context.someFunction = someFunction;
+});
+
+test('someFunction exists', t => {
+  t.truthy(t.context.someFunction, 'someFunction exists!');
+});
+// END
+
+const someFunction = name => {
+  return `Hello, ${name}`;
+};
+
+module.exports = {
+  someFunction
 };
 ```
 
-Output: `test/somefile.spec.js`
+Output: `test/test_somefile.js`
 ```javascript
-var chai = require('chai'),
-    expect = chai.expect,
-    assert = chai.assert,
-    should = chai.should();
+'use strict';
+import test from 'ava';
 
-var exported = require('../somefile.js');
+// TEST { import someFunction }
+import {someFunction} from 'somefile';
+// END
 
-describe('somefileJs', function() {
-
-    var somefileJs = exported;
-
-    it('should return a string', function() {
-        expect(somefile()).to.be.a('string');
-    });
-
+// TEST { someFunction }
+test.beforeEach(t => {
+  t.context.someFunction = someFunction;
 });
-```
 
-------
+test('someFunction exists', t => {
+  t.truthy(t.context.someFunction, 'someFunction exists!');
+});
+// END
+```
 
 ## Contributing
 
-Any contributions are appreciated. Please fork and submit a pull request for any changes or submit suggestions or issues through the [issues](https://github.com/ajthor/inkblot/issues) tab.
+Any contributions are welcome and appreciated. Please fork and submit a pull request for any changes or submit suggestions or issues through the [issues](https://github.com/ajthor/inkblot/issues) tab.
