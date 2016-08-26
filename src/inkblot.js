@@ -94,71 +94,90 @@ const mergeTests = (globs, options) => {
       });
       spinner.start();
 
-      // Get the name of the test file which corresponds with the source file.
-      const {name, ext} = path.parse(file);
-      const targetDir = `${path.resolve(path.dirname(__dirname), options.output)}`;
-      const targetPath = `${targetDir}/test-${name}${ext}`;
-
-      const sourceFile = fs.readFileAsync(file, 'utf8');
       // Get all of the source blocks from the source file.
+      const sourceFile = fs.readFileAsync(file, 'utf8');
       const sourceBlocks = sourceFile.then(contents => matchRegex(contents, regexBlock));
 
-      // Get the target file and possibly create it if it doesn't already exist.
-      const targetFile = fs.accessAsync(targetPath, fs.F_OK)
-        // If we cannot access the file because it doesn't exist, create the
-        // file and add 'boilerplate'.
-        .catch(() => {
-          if (sourceBlocks.value && !options.dry) {
-            fs.appendFileAsync(targetPath, `'use strict';\nimport test from 'ava';\n`);
+      return Promise.resolve(sourceBlocks)
+        .then(sourceBlocks => {
+          // If there are no source blocks in the file, there is no reason to
+          // create a test file for it. Skip this file.
+          if (sourceBlocks.length === 0) {
+            spinner.text = `${file}`;
+            spinner.stopAndPersist();
+            return;
           }
+            // Get the name of the test file which corresponds with the
+            // source file.
+          const {name, ext} = path.parse(file);
+          const targetDir = `${path.resolve(path.dirname(__dirname), options.output)}`;
+          const targetPath = `${targetDir}/test-${name}${ext}`;
+            // Get the target file and possibly create it if it doesn't
+            // already exist.
+          const targetFile = fs.accessAsync(targetPath, fs.F_OK)
+            // If we cannot access the file because it doesn't exist, create
+            // the file and add 'boilerplate'.
+            .catch(() => {
+              if (!options.dry) {
+                fs.appendFileAsync(targetPath, `'use strict';\nimport test from 'ava';\n`);
+              }
+            })
+            .then(() => fs.readFileAsync(targetPath, 'utf8'));
+
+          const targetBlocks = targetFile.then(contents => matchRegex(contents, regexBlock));
+
+          return Promise.join(sourceBlocks, targetBlocks, (sourceBlocks, targetBlocks) => {
+              // Perform soft update of all blocks. This will return an array
+              // of all updates to be made to the target file.
+            return softMerge(sourceBlocks, targetBlocks);
+          })
+            // Then we need to perform a 'hard' merge of the tests found in
+            // the source file and write the newly updated test file to disk.
+            .then(updates => {
+              let sourceContents = sourceFile.value();
+              let targetContents = targetFile.value();
+
+              spinner.text = `${file} ...updating`;
+              // Cycle through the updates one-by-one and replace the test
+              // file's code with the code found in the source file, matching
+              // using the identifier wrapped in curly braces.
+              forEach(updates, update => {
+                // Remove the test blocks from the source file.
+                if (options.clean && !options.dry) {
+                  sourceContents = sourceContents.replace(update.diff, '');
+                }
+                // Update the target file.
+                if (update.orig) {
+                  targetContents = targetContents.replace(update.orig, update.diff);
+                } else {
+                  targetContents += '\n' + update.diff + '\n';
+                }
+              });
+
+              return {
+                sourceContents,
+                targetContents
+              };
+            })
+            .then(({sourceContents, targetContents}) => {
+              if (!options.dry) {
+                if (options.clean) {
+                  fs.writeFileAsync(file, sourceContents);
+                }
+                fs.writeFileAsync(targetPath, targetContents);
+              }
+
+              spinner.text = `${file} ...done`;
+              spinner.succeed();
+            });
         })
-        .then(() => fs.readFileAsync(targetPath, 'utf8'));
-
-      const targetBlocks = targetFile.then(contents => matchRegex(contents, regexBlock));
-
-      return Promise.join(sourceBlocks, targetBlocks, (sourceBlocks, targetBlocks) => {
-        // Perform soft update of all blocks. This will return an array of
-        // all updates to be made to the target file.
-        return softMerge(sourceBlocks, targetBlocks);
-      })
-        // Then we need to perform a 'hard' merge of the tests found in the
-        // source file and write the newly updated test file to disk.
-        .then(updates => {
-          let sourceContents = sourceFile.value();
-          let targetContents = targetFile.value();
-
-          spinner.text = `${file} ...updating`;
-          // Cycle through the updates one-by-one and replace the test file's
-          // code with the code found in the source file, matching using the
-          // identifier wrapped in curly braces.
-          forEach(updates, update => {
-            // Remove the test blocks from the source file.
-            if (options.clean && !options.dry) {
-              sourceContents = sourceContents.replace(update.diff, '');
-            }
-            // Update the target file.
-            if (update.orig) {
-              targetContents = targetContents.replace(update.orig, update.diff);
-            } else {
-              targetContents += '\n' + update.diff + '\n';
-            }
-          });
-
-          return {
-            sourceContents,
-            targetContents
-          };
+        .catch(e => {
+          // Catch-all for any errors that might have happened along the way.
+          spinner.text = `${file} ...failed`;
+          spinner.fail();
+          throw e;
         })
-        .then(({sourceContents, targetContents}) => {
-          if (!options.dry) {
-            if (options.clean) {
-              fs.writeFileAsync(file, sourceContents);
-            }
-            fs.writeFileAsync(targetPath, targetContents);
-          }
-
-          spinner.text = `${file} ...done`;
-          spinner.succeed();
+        .finally(() => {
           spinner.stop();
         });
     });
