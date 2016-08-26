@@ -9,7 +9,7 @@ const paths = {
 
 gulp.task('test', () =>
 	gulp.src(paths.tests)
-		.pipe(ava({
+    .pipe(ava({
       nyc: true
     }))
 );

@@ -1,5 +1,6 @@
 'use strict';
 import path from 'path';
+
 import ChildProcess from 'child_process';
 import Promise from 'bluebird';
 import getStream from 'get-stream';
@@ -39,14 +40,10 @@ const callCli = (args, cb) => {
   return childProc;
 };
 
-test.cb('cli exists and is callable', t => {
-  callCli(['-h'], t.end);
-});
-
-// TEST { cli call tests }
+// TEST { cli tests }
 test.cb('will display help if the -h flag is passed', t => {
   callCli(['-h'], (err, stdout) => {
-    t.ifError(err, 'No error from help.');
+    t.ifError(err);
     t.regex(stdout, /Usage/, 'Contains \'Usage\'.');
     t.end();
   });
