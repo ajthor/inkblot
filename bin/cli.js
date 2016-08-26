@@ -2,7 +2,7 @@
 'use strict';
 
 const meow = require('meow');
-const inkblot = require('../lib/inkblot.js');
+const inkblot = require('../src/inkblot.js');
 
 global.test = () => {};
 

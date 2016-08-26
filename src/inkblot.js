@@ -52,7 +52,7 @@ const softMerge = (sourceBlocks, targetBlocks) => {
   // Cycle through each block found in the source file and match it to the
   // blocks found in the target (test) file.
   sourceBlocks.forEach(sourceBlock => {
-    let update = {};
+    const update = {};
     update.name = sourceBlock[1].trim();
     update.diff = sourceBlock[0];
 
@@ -105,10 +105,10 @@ const mergeTests = (globs, options) => {
       const targetBlocks = targetFile.then(contents => matchRegex(contents, regexBlock));
 
       return Promise.join(sourceBlocks, targetBlocks, (sourceBlocks, targetBlocks) => {
-          // Perform soft update of all blocks. This will return an array of
-          // all updates to be made to the target file.
-          return softMerge(sourceBlocks, targetBlocks);
-        })
+        // Perform soft update of all blocks. This will return an array of
+        // all updates to be made to the target file.
+        return softMerge(sourceBlocks, targetBlocks);
+      })
         // Then we need to perform a 'hard' merge of the tests found in the
         // source file and write the newly updated test file to disk.
         .then(updates => {
