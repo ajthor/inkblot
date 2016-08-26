@@ -5,6 +5,7 @@ const path = require('path');
 const {forEach} = require('lodash');
 const globby = require('globby');
 const Promise = require('bluebird');
+const Ora = require('ora');
 
 Promise.promisifyAll(fs);
 
@@ -75,7 +76,6 @@ const softMerge = (sourceBlocks, targetBlocks) => {
 // Function exposed to the CLI as the point of entry into the program. Accepts
 // globs and parses the files one-by-one.
 const mergeTests = (globs, options) => {
-  console.log(options);
   // For when no globs are given.
   if (globs.length === 0) {
     // Default to matching all javascript and .jsx files in the folder.
@@ -87,6 +87,13 @@ const mergeTests = (globs, options) => {
   // don't have to worry about two files overlapping.
   return Promise.resolve(globby(globs, {ignore: options.ignore}))
     .each(file => {
+      // Start the progress indicator.
+      const spinner = new Ora({
+        text: `${file} ...loading`,
+        color: 'yellow'
+      });
+      spinner.start();
+
       // Get the name of the test file which corresponds with the source file.
       const {name, ext} = path.parse(file);
       const targetDir = `${path.resolve(path.dirname(__dirname), options.output)}`;
@@ -119,11 +126,12 @@ const mergeTests = (globs, options) => {
         .then(updates => {
           let sourceContents = sourceFile.value();
           let targetContents = targetFile.value();
+
+          spinner.text = `${file} ...updating`;
           // Cycle through the updates one-by-one and replace the test file's
           // code with the code found in the source file, matching using the
           // identifier wrapped in curly braces.
           forEach(updates, update => {
-            console.log(update);
             // Remove the test blocks from the source file.
             if (options.clean && !options.dry) {
               sourceContents = sourceContents.replace(update.diff, '');
@@ -148,6 +156,10 @@ const mergeTests = (globs, options) => {
             }
             fs.writeFileAsync(targetPath, targetContents);
           }
+
+          spinner.text = `${file} ...done`;
+          spinner.succeed();
+          spinner.stop();
         });
     });
 };

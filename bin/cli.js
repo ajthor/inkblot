@@ -4,8 +4,6 @@
 const meow = require('meow');
 const inkblot = require('../src/inkblot.js');
 
-global.test = () => {};
-
 // InkBlot Command-Line Tool
 // =========================
 // This is the CLI program for InkBlot, the unit test generator.
