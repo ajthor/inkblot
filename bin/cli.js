@@ -28,7 +28,7 @@ const defaultIgnores = [
   '**/gulp*',
   'fixture{-*,}.{js,jsx}',
   'fixture{s,}/**',
-  '**/test_*.js',
+  '**/test-*.js',
   '{test,tests,spec,__tests__}/fixture{s,}/**',
   'vendor/**',
   'dist/**'

@@ -3,7 +3,6 @@
   "version": "0.3.0",
   "main": "bin/cli.js",
   "scripts": {
-    "start": "inkblot",
     "test": "gulp test"
   },
   "bin": {
@@ -38,6 +37,7 @@
     "ora": "^0.3.0"
   },
   "devDependencies": {
+    "ava": "^0.16.0",
     "gulp": "^3.9.1",
     "gulp-ava": "^0.12.1",
     "gulp-util": "^3.0.7",

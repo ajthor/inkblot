@@ -9,7 +9,6 @@ const paths = {
 
 gulp.task('test', () =>
 	gulp.src(paths.tests)
-		// gulp-ava needs filepaths so you can't have any plugins before it
 		.pipe(ava())
 );
 
@@ -17,3 +16,8 @@ gulp.task('lint', () =>
   gulp.src(paths.scripts)
     .pipe(xo())
 );
+
+gulp.task('watch', () => {
+  gulp.watch(paths.scripts, ['lint']);
+  gulp.watch(paths.tests, ['test']);
+});
