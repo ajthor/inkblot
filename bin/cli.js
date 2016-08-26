@@ -15,6 +15,7 @@ const usage = `
   Options:
     -h, --help                         Show this message.
     -i, --init                         Initialize the project with inkblot.
+    -c, --clean                        Clean up source file. Delete test blocks.
     -o <output>, --output="<output>"   Specify an output directory. Default is 'test'.
     --dry                              Dry run. Will not create or modify any files.
 `;
@@ -37,11 +38,13 @@ const defaultIgnores = [
 
 const cli = meow(usage, {
   alias: {
+    c: 'clean',
     h: 'help',
     o: 'output'
   },
   default: {
     dry: false,
+    clean: false,
     ignore: defaultIgnores,
     o: 'test'
   }

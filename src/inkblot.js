@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const _ = require('lodash');
+const {forEach} = require('lodash');
 const globby = require('globby');
 const Promise = require('bluebird');
 
@@ -23,7 +23,7 @@ Promise.promisifyAll(fs);
 // to be used.
 
 // Regex for finding test blocks. Regex-fu.
-const regexBlock = /^(?:\/\/\s*?TEST\s*?{([\s\S]+?)})\s*?\n([\s\S]+?)(?=\/\/\s*?END)/gm;
+const regexBlock = /^(?:\/\/\s*?TEST\s*?{([\s\S]+?)})\s*?\n([\s\S]+?)(?:\/\/\s*?END)/gm;
 // ^(?:\/\/\s*?TEST\s*? - Find all double-slash comments that precede the word `TEST`.
 //   {([\s\S]+?)}) - Capture the 'label' of the test block.
 //   \s*?\n - Ensure that a newline exists after this declaration.
@@ -51,12 +51,11 @@ const softMerge = (sourceBlocks, targetBlocks) => {
   const updates = [];
   // Cycle through each block found in the source file and match it to the
   // blocks found in the target (test) file.
-  sourceBlocks.forEach(sourceBlock => {
+  forEach(sourceBlocks, sourceBlock => {
     const update = {};
     update.name = sourceBlock[1].trim();
     update.diff = sourceBlock[0];
-
-    _.forEach(targetBlocks, targetBlock => {
+    forEach(targetBlocks, targetBlock => {
       // Match the blocks using the name of the block.
       if (update.name === targetBlock[1].trim()) {
         update.orig = targetBlock[0];
@@ -76,6 +75,7 @@ const softMerge = (sourceBlocks, targetBlocks) => {
 // Function exposed to the CLI as the point of entry into the program. Accepts
 // globs and parses the files one-by-one.
 const mergeTests = (globs, options) => {
+  console.log(options);
   // For when no globs are given.
   if (globs.length === 0) {
     // Default to matching all javascript and .jsx files in the folder.
@@ -88,19 +88,24 @@ const mergeTests = (globs, options) => {
   return Promise.resolve(globby(globs, {ignore: options.ignore}))
     .each(file => {
       // Get the name of the test file which corresponds with the source file.
-      const testDir = `${path.resolve(path.dirname(__dirname), 'test')}`;
-      const testPath = `${testDir}/test_${path.parse(file).name}.js`;
+      const {name, ext} = path.parse(file);
+      const targetDir = `${path.resolve(path.dirname(__dirname), options.output)}`;
+      const targetPath = `${targetDir}/test-${name}${ext}`;
 
+      const sourceFile = fs.readFileAsync(file, 'utf8');
       // Get all of the source blocks from the source file.
-      const sourceBlocks = fs.readFileAsync(file, 'utf8')
-        .then(contents => matchRegex(contents, regexBlock));
+      const sourceBlocks = sourceFile.then(contents => matchRegex(contents, regexBlock));
 
       // Get the target file and possibly create it if it doesn't already exist.
-      const targetFile = fs.accessAsync(file, fs.F_OK)
+      const targetFile = fs.accessAsync(targetPath, fs.F_OK)
         // If we cannot access the file because it doesn't exist, create the
         // file and add 'boilerplate'.
-        .catch(() => fs.appendFileAsync(file, `'use strict';\nimport test from 'ava';\n`))
-        .then(() => fs.readFileAsync(testPath, 'utf8'));
+        .catch(() => {
+          if (sourceBlocks.value && !options.dry) {
+            fs.appendFileAsync(targetPath, `'use strict';\nimport test from 'ava';\n`);
+          }
+        })
+        .then(() => fs.readFileAsync(targetPath, 'utf8'));
 
       const targetBlocks = targetFile.then(contents => matchRegex(contents, regexBlock));
 
@@ -112,22 +117,37 @@ const mergeTests = (globs, options) => {
         // Then we need to perform a 'hard' merge of the tests found in the
         // source file and write the newly updated test file to disk.
         .then(updates => {
+          let sourceContents = sourceFile.value();
           let targetContents = targetFile.value();
           // Cycle through the updates one-by-one and replace the test file's
           // code with the code found in the source file, matching using the
           // identifier wrapped in curly braces.
-          updates.forEach(update => {
+          forEach(updates, update => {
+            console.log(update);
+            // Remove the test blocks from the source file.
+            if (options.clean && !options.dry) {
+              sourceContents = sourceContents.replace(update.diff, '');
+            }
+            // Update the target file.
             if (update.orig) {
               targetContents = targetContents.replace(update.orig, update.diff);
             } else {
-              targetContents += '\n' + update.diff + '\n\n';
+              targetContents += '\n' + update.diff + '\n';
             }
           });
 
-          return targetContents;
+          return {
+            sourceContents,
+            targetContents
+          };
         })
-        .then(updatedContents => {
-          return fs.writeFileAsync(testPath, updatedContents);
+        .then(({sourceContents, targetContents}) => {
+          if (!options.dry) {
+            if (options.clean) {
+              fs.writeFileAsync(file, sourceContents);
+            }
+            fs.writeFileAsync(targetPath, targetContents);
+          }
         });
     });
 };
