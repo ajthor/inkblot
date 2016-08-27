@@ -1,5 +1,7 @@
 // This file is purely for testing purposes.
 
+const test = () => {};
+
 // TEST { 1 }
 test('dummy', t => {
   // For testing.

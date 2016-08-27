@@ -10,6 +10,7 @@ const paths = {
 gulp.task('test', () =>
 	gulp.src(paths.tests)
     .pipe(ava({
+      verbose: true,
       nyc: true
     }))
 );

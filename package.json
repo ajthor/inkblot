@@ -52,6 +52,23 @@
     "lib": "./lib",
     "bin": "./bin"
   },
+  "ava": {
+    "files": [
+      "test/**.*",
+      "!fixture"
+    ]
+  },
+  "nyc": {
+    "include": [
+      "bin/**",
+      "src/**"
+    ],
+    "exclude": [
+      "node_modules",
+      "**/fixture{-*,}.{js,jsx}",
+      "fixture"
+    ]
+  },
   "xo": {
     "esnext": true,
     "space": 2
